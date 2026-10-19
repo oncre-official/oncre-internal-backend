@@ -65,6 +65,9 @@ export class User extends Document implements IUser {
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
+UserSchema.set('toJSON', { virtuals: true });
+UserSchema.set('toObject', { virtuals: true });
+
 UserSchema.index({ countryCode: 1, phone: 1 }, { unique: true });
 
 UserSchema.virtual('phoneNumber').get(function () {

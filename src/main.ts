@@ -9,7 +9,7 @@ import { config } from './config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 
 const isProd = config.app.isProd;
-const port = Number(config.port ?? 5005);
+const port = Number(config.port ?? 3000);
 const swaggerUrl = isProd ? 'docs/on-recovery' : 'doc';
 
 async function bootstrap() {
