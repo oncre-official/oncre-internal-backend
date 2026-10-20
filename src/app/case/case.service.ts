@@ -1,15 +1,19 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ObjectId } from 'mongodb';
 import * as XLSX from 'xlsx';
 
 import { joinSearchQuery } from '@on/helpers/search';
+import { TermiiService } from '@on/services/termii/service';
 import { FileDto } from '@on/utils/dto/file.dto';
 import { ServiceResponse } from '@on/utils/types';
 
+import { Customer } from '../customer/model/customer.model';
 import { CustomerRepository } from '../customer/repository/customer.repository';
 import { LogService } from '../log/log.service';
 import { AuditAction, AuditModule, AuditStatus } from '../log/type/audit-log.interface';
+import { Merchant } from '../merchant/model/merchant.model';
 import { MerchantRepository } from '../merchant/repository/merchant.repository';
+import { MerchantType } from '../merchant/types/index.interface';
 import { SharedService } from '../shared/shared.service';
 import { StaffRepository } from '../staff/repository/staff.repository';
 import { User } from '../user/model/user.model';
@@ -22,9 +26,12 @@ import { CaseSource, CaseStatus, CaseUploadResult, ExcelCaseRow } from './types/
 
 @Injectable()
 export class CaseService {
+  private readonly logger = new Logger(CaseService.name);
+
   constructor(
     private readonly log: LogService,
     private readonly cases: CaseRepository,
+    private readonly termii: TermiiService,
     private readonly shared: SharedService,
     private readonly staff: StaffRepository,
     private readonly customer: CustomerRepository,
@@ -78,13 +85,13 @@ export class CaseService {
 
     const creatorId = new ObjectId(String(creator._id));
 
-    const merchant = merchantId
+    const merchant: any = merchantId
       ? await this.merchant.findOne({ _id: merchantId })
       : await this.merchant.findOrCreate({ name: merchantName, phone: merchantPhone, createdBy: creatorId });
 
     if (merchantId && !merchant) throw new NotFoundException('Merchant not found');
 
-    const customer = customerId
+    const customer: any = customerId
       ? await this.customer.findOne({ _id: customerId })
       : await this.customer.findOrCreate({ name: customerName, phone: customerPhone, createdBy: creatorId });
 
@@ -108,6 +115,8 @@ export class CaseService {
     };
 
     const data = await this.cases.create(casePayload);
+
+    await this.sendSms(merchant, customer, data);
 
     await this.log.record(creator, {
       action: AuditAction.CREATE,
@@ -287,7 +296,7 @@ export class CaseService {
 
     const caseId = await this.shared.generateSequentialId('caseId', 'CA', 5);
 
-    return this.cases.create({
+    const data = await this.cases.create({
       ...payload,
       caseId,
       merchantId: merchant?._id,
@@ -295,6 +304,10 @@ export class CaseService {
       debtAge: this.calculateDebtAge(dueDate),
       source,
     });
+
+    await this.sendSms(merchant, customer, data);
+
+    return data;
   }
 
   private mapExcelRowToCreateCaseDto(row: ExcelCaseRow) {
@@ -402,5 +415,39 @@ export class CaseService {
     }
 
     throw new BadRequestException('Due date must be a valid Excel date or YYYY-MM-DD');
+  }
+
+  private async sendSms(merchant: Merchant, customer: Customer, newCase: CaseDocument): Promise<void> {
+    const notifications: Promise<unknown>[] = [];
+
+    const caseId = String(newCase._id);
+    const amount = Number(newCase.amount ?? 0).toLocaleString('en-NG');
+    const merchantName = merchant.name;
+    const merchantPhone = merchant.phone;
+
+    const merchantMessage = `Hello ${merchant.name},
+     Case #${caseId} is now active on OnCre.
+     We've received your portfolio of ₦${amount}, and our recovery agents are already reaching out to your debtors.
+     We will update you on progress. Let's get you paid.- Team OnCre`;
+
+    const customerMessage = `Hello ${customer.name}, OnCre has opened recovery Case ID ${caseId} for your overdue ${merchantName} balance of ₦${amount}.
+     Can you pay in full? If not, we can discuss a realistic instalment plan, starting with an amount you can afford
+     Call ${merchantPhone} or WhatsApp ${merchantPhone}. If any detail is wrong, contact us.`;
+
+    if (merchant.type === MerchantType.STANDARD) {
+      notifications.push(
+        this.termii.sendSMS(merchant.phone, merchantMessage).catch((error) => {
+          this.logger.error(`Failed to send case creation SMS to merchant ${String(merchant._id)}: ${error.message}`);
+        }),
+      );
+    }
+
+    notifications.push(
+      this.termii.sendSMS(customer.phone, customerMessage).catch((error) => {
+        this.logger.error(`Failed to send case creation SMS to customer ${String(customer._id)}: ${error.message}`);
+      }),
+    );
+
+    await Promise.all(notifications);
   }
 }
