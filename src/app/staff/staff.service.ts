@@ -83,13 +83,12 @@ export class StaffService {
       });
     }
 
-    const staffId = await this.shared.generateSequentialId('staffId', 'CUS', 5);
+    const staffCode = await this.shared.generateSequentialId('staffCode', 'ST', 5);
 
     const staffPayload = {
       ...payload,
-      staffId: staffId,
-      key: staffPhone,
       userId: user._id,
+      code: staffCode,
       createdBy: creator._id,
     };
 

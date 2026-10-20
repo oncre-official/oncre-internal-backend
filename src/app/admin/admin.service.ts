@@ -8,6 +8,7 @@ import { Role } from '../role/model/role.model';
 import { PermissionRepository } from '../role/repository/permission.repository';
 import { RolePermissionRepository } from '../role/repository/role-permission.repository';
 import { RoleRepository } from '../role/repository/role.repository';
+import { SharedService } from '../shared/shared.service';
 import { StaffRepository } from '../staff/repository/staff.repository';
 import { User } from '../user/model/user.model';
 import { UserRepository } from '../user/repository/user.repository';
@@ -24,6 +25,7 @@ export class AdminService {
     private readonly user: UserRepository,
     private readonly role: RoleRepository,
     private readonly staff: StaffRepository,
+    private readonly shared: SharedService,
     private readonly permission: PermissionRepository,
     private readonly rolePermission: RolePermissionRepository,
   ) {}
@@ -63,11 +65,16 @@ export class AdminService {
       emailVerified: true,
     });
 
-    await this.staff.create({
+    const staffCode = await this.shared.generateSequentialId('staffCode', 'ST', 5);
+
+    const staffPayload = {
       ...others,
       userId: user._id,
+      code: staffCode,
       createdBy: creator._id,
-    });
+    };
+
+    await this.staff.create(staffPayload);
 
     const data = { ...user.toObject(), password };
 
