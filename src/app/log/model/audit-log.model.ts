@@ -14,7 +14,7 @@ export class AuditLog implements IAuditLog {
   userId: ObjectId;
 
   @ApiProperty()
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'User', required: false })
   recordId?: ObjectId;
 
   @ApiProperty()
