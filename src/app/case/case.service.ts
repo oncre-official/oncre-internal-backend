@@ -68,7 +68,7 @@ export class CaseService {
       normal: () =>
         this.cases.findAndCount(query, {
           aggregate: { skip, limit },
-          populate: [{ path: 'merchant' }, { path: 'customer' }],
+          populate: [{ path: 'merchant' }, { path: 'customer' }, { path: 'agent' }],
           sort: { createdAt: -1 },
         }),
     };
