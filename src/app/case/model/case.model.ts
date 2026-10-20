@@ -6,6 +6,7 @@ import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
 import { Customer } from '@on/app/customer/model/customer.model';
 import { Merchant } from '@on/app/merchant/model/merchant.model';
 import { Product } from '@on/app/merchant/types/index.interface';
+import { Staff } from '@on/app/staff/model/staff.model';
 
 import { ICase } from '../types/case.interface';
 import { CaseSource, CaseStatus, NigerianZone, RecoveryClassification, RecoveryMode } from '../types/index.interface';
@@ -92,7 +93,7 @@ export class Case implements ICase {
   nextActionAt: Date;
 
   @ApiPropertyOptional({ type: String })
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User' })
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Staff' })
   agentId: ObjectId;
 
   @ApiPropertyOptional({ type: String })
@@ -184,6 +185,9 @@ export class Case implements ICase {
 
   @ApiHideProperty()
   customer: Customer;
+
+  @ApiHideProperty()
+  agent: Staff;
 }
 
 export const CaseSchema = SchemaFactory.createForClass(Case);
@@ -198,14 +202,21 @@ CaseSchema.index({ batchId: 1 });
 CaseSchema.virtual('merchant', {
   ref: 'Merchant',
   localField: 'merchantId',
-  foreignField: 'merchantId',
+  foreignField: '_id',
   justOne: true,
 });
 
 CaseSchema.virtual('customer', {
   ref: 'Customer',
   localField: 'customerId',
-  foreignField: 'customerId',
+  foreignField: '_id',
+  justOne: true,
+});
+
+CaseSchema.virtual('agent', {
+  ref: 'Staff',
+  localField: 'agentId',
+  foreignField: '_id',
   justOne: true,
 });
 
