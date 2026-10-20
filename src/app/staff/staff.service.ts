@@ -42,7 +42,7 @@ export class StaffService {
       normal: () =>
         this.staff.findAndCount(query, {
           aggregate: { skip, limit },
-          populate: [{ path: 'user' }],
+          populate: [{ path: 'user', populate: [{ path: 'role' }] }],
           sort: { createdAt: -1 },
         }),
     };
