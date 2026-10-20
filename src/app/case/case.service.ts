@@ -34,7 +34,27 @@ export class CaseService {
   async find(query: QueryCaseDto, skip: number = 0, limit: number = 20): Promise<ServiceResponse<any>> {
     const { search } = query;
 
-    const joinQuery = joinSearchQuery({ search, fields: [], query, joins: [] });
+    const joinQuery = joinSearchQuery({
+      search,
+      fields: ['zone', 'description', 'product', 'source'],
+      query,
+      joins: [
+        {
+          from: 'customers',
+          localField: 'customerId',
+          foreignField: '_id',
+          as: 'customer',
+          searchFields: ['name', 'businessName'],
+        },
+        {
+          from: 'merchants',
+          localField: 'merchantId',
+          foreignField: '_id',
+          as: 'merchant',
+          searchFields: ['name', 'storeName', 'email', 'type', 'channel'],
+        },
+      ],
+    });
 
     const strategies = {
       search: () => this.cases.aggregateAndCount(joinQuery, { aggregate: { skip, limit } }),

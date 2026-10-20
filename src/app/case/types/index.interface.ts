@@ -85,3 +85,12 @@ export interface CaseUploadResult {
   data?: Record<string, any>;
   errors?: string[];
 }
+
+export enum NigerianZone {
+  NORTH_CENTRAL = 'NORTH_CENTRAL',
+  NORTH_EAST = 'NORTH_EAST',
+  NORTH_WEST = 'NORTH_WEST',
+  SOUTH_EAST = 'SOUTH_EAST',
+  SOUTH_SOUTH = 'SOUTH_SOUTH',
+  SOUTH_WEST = 'SOUTH_WEST',
+}

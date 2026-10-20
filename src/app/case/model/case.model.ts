@@ -8,7 +8,7 @@ import { Merchant } from '@on/app/merchant/model/merchant.model';
 import { Product } from '@on/app/merchant/types/index.interface';
 
 import { ICase } from '../types/case.interface';
-import { CaseSource, CaseStatus, RecoveryClassification, RecoveryMode } from '../types/index.interface';
+import { CaseSource, CaseStatus, NigerianZone, RecoveryClassification, RecoveryMode } from '../types/index.interface';
 
 import {
   CaseAssetDetails,
@@ -38,6 +38,10 @@ export class Case implements ICase {
   @ApiProperty({ enum: RecoveryClassification })
   @Prop({ type: String, enum: RecoveryClassification, required: true })
   classification: RecoveryClassification;
+
+  @ApiProperty({ enum: NigerianZone })
+  @Prop({ type: String, enum: NigerianZone })
+  zone: NigerianZone;
 
   @ApiProperty({ type: Number, minimum: 0 })
   @Prop({ type: Number, required: true, min: 0 })

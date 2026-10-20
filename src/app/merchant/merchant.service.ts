@@ -33,7 +33,7 @@ export class MerchantService {
 
     const joinQuery = joinSearchQuery({
       search,
-      fields: ['merchant_name', 'merchant_phone', 'merchant_storeName'],
+      fields: ['name', 'storeName', 'phone', 'email', 'location', 'product'],
       query,
       joins: [
         {
