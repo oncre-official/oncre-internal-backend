@@ -34,7 +34,6 @@ export interface ICase extends IBaseType {
   agentId: ObjectId;
   supervisorId: ObjectId;
 
-  portfolioId?: string;
   source: CaseSource;
   batchId: string;
   tag: {

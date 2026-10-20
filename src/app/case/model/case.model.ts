@@ -95,10 +95,6 @@ export class Case implements ICase {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User' })
   supervisorId: ObjectId;
 
-  @ApiPropertyOptional()
-  @Prop({ type: String })
-  portfolioId?: string;
-
   @ApiProperty({ enum: CaseSource })
   @Prop({ type: String, enum: CaseSource, required: true, default: CaseSource.MANUAL })
   source: CaseSource;

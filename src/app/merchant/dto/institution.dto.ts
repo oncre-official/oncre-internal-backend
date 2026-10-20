@@ -74,11 +74,11 @@ export class InstitutionDto implements IInstitutionDetails {
   @ApiProperty({ description: 'Legal name of the institution', example: 'Acme Financial Services Limited' })
   @IsString()
   @IsOptional()
-  legal_name: string;
+  legalName: string;
 
   @ApiProperty({ description: 'Institution registration number', example: 'RC123456' })
   @IsString()
-  registration_no: string;
+  registrationNo: string;
 
   @ApiProperty({ description: 'Institution contact details', type: () => InstitutionContactDto })
   @ValidateNested()
@@ -100,16 +100,16 @@ export class InstitutionDto implements IInstitutionDetails {
 
   @ApiProperty({ description: 'Frequency of institution reporting', enum: ReportingCadence })
   @IsEnum(ReportingCadence)
-  reporting_cadence: ReportingCadence;
+  reportingCadence: ReportingCadence;
 
   @ApiProperty({ description: 'Display name of the institution', example: 'Acme Financial' })
   @IsString()
-  display_name: string;
+  displayName: string;
 
   @ApiPropertyOptional({ description: 'Reporting template identifier or name', example: 'standard-monthly-report' })
   @IsOptional()
   @IsString()
-  report_template?: string;
+  reportTemplate?: string;
 
   @ApiPropertyOptional({
     description: 'URL or path to the signed agreement',
@@ -117,7 +117,7 @@ export class InstitutionDto implements IInstitutionDetails {
   })
   @IsOptional()
   @IsString()
-  signed_agreement?: string;
+  signedAgreement?: string;
 
   @ApiPropertyOptional({
     description: 'Regions covered by the institution',

@@ -19,8 +19,8 @@ export interface IMerchantContact {
 }
 
 export interface IInstitutionDetails {
-  legal_name: string;
-  registration_no: string;
+  legalName: string;
+  registrationNo: string;
   contact: {
     primary: IMerchantContact;
     additional: IMerchantContact[];
@@ -30,11 +30,11 @@ export interface IInstitutionDetails {
     date: Date;
     status: AgreementStatus;
   };
-  fee_terms_reference?: string;
-  reporting_cadence: ReportingCadence;
-  display_name: string;
-  report_template?: string;
-  signed_agreement?: string;
+  feeTermsReference?: string;
+  reportingCadence: ReportingCadence;
+  displayName: string;
+  reportTemplate?: string;
+  signedAgreement?: string;
   regions?: string[];
 }
 

@@ -59,11 +59,11 @@ export const InstitutionContactSchema = SchemaFactory.createForClass(Institution
 export class InstitutionDetails implements IInstitutionDetails {
   @ApiProperty({ description: 'Legal name of the institution', example: 'Acme Financial Services Limited' })
   @Prop({ required: true })
-  legal_name: string;
+  legalName: string;
 
   @ApiProperty({ description: 'Institution registration number', example: 'RC123456' })
   @Prop({ required: true })
-  registration_no: string;
+  registrationNo: string;
 
   @ApiProperty({ description: 'Institution contact information', type: () => InstitutionContact })
   @Prop({ type: InstitutionContactSchema, required: true })
@@ -75,26 +75,26 @@ export class InstitutionDetails implements IInstitutionDetails {
 
   @ApiPropertyOptional({ description: 'Reference to the agreed fee terms', example: 'FEE-TERMS-001' })
   @Prop()
-  fee_terms_reference?: string;
+  feeTermsReference?: string;
 
   @ApiProperty({ description: 'Reporting frequency for the institution', enum: ReportingCadence })
   @Prop({ required: true, enum: ReportingCadence, type: String })
-  reporting_cadence: ReportingCadence;
+  reportingCadence: ReportingCadence;
 
   @ApiProperty({ description: 'Display name of the institution', example: 'Acme Financial' })
   @Prop({ required: true })
-  display_name: string;
+  displayName: string;
 
   @ApiPropertyOptional({ description: 'Reporting template identifier or name', example: 'standard-monthly-report' })
   @Prop()
-  report_template?: string;
+  reportTemplate?: string;
 
   @ApiPropertyOptional({
     description: 'URL or path to the signed agreement',
     example: 'https://example.com/agreements/signed-agreement.pdf',
   })
   @Prop()
-  signed_agreement?: string;
+  signedAgreement?: string;
 
   @ApiPropertyOptional({
     description: 'Regions covered by the institution',
