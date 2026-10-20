@@ -1,8 +1,7 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags, ApiUnprocessableEntityResponse } from '@nestjs/swagger';
 
 import { Roles } from '@on/decorators/roles.decorator';
-import { User } from '@on/decorators/user.decorator';
 import { ErrorResponse, JsonResponse } from '@on/handlers/responses';
 import { requestFilter } from '@on/helpers/filter';
 import { QueryDto } from '@on/utils/dto/query.dto';
@@ -11,9 +10,7 @@ import { ResponseDTO } from '@on/utils/types';
 
 import { JwtAuthGuard } from '../auth/guard/auth.guard';
 import { RoleGuard } from '../auth/guard/role.guard';
-import { User as UserDocument } from '../user/model/user.model';
 
-import { CreateStaffDto } from './dto/staff.dto';
 import { Staff } from './model/staff.model';
 import { StaffService } from './staff.service';
 
@@ -40,30 +37,6 @@ export class StaffController {
       const filter = requestFilter(query, { convertToRegex: false });
 
       const response = await this.staffService.find(filter, skip, limit);
-
-      return JsonResponse(res, response);
-    } catch (error) {
-      return ErrorResponse(res, error, req);
-    }
-  }
-
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Create staff',
-    description: 'Allows users create staff',
-  })
-  @ApiOkResponse({ description: 'Create staff successful ', type: ApiResponseDTO })
-  @Roles('admin', 'super-admin', 'field-staff')
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @Post('/')
-  async createStaff(
-    @Body() payload: CreateStaffDto,
-    @User() user: UserDocument,
-    @Res() res: Response,
-    @Req() req: Request,
-  ): Promise<ResponseDTO> {
-    try {
-      const response = await this.staffService.create(user, payload);
 
       return JsonResponse(res, response);
     } catch (error) {
