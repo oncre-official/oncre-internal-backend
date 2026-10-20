@@ -74,10 +74,6 @@ export class SharedController {
     }
   }
 
-
-
- 
-
   /**
    * FILE UPLOAD
    */
