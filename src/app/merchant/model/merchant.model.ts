@@ -53,7 +53,7 @@ export class Merchant extends Document implements IMerchant {
   type: MerchantType;
 
   @ApiProperty({ description: 'Channel through which the merchant was acquired', enum: MerchantChannel })
-  @Prop({ type: String, enum: MerchantChannel, required: true })
+  @Prop({ type: String, required: true })
   channel: MerchantChannel;
 
   @ApiProperty({

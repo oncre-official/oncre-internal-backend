@@ -20,6 +20,7 @@ export enum MerchantChannel {
   MERCHANT_PORTAL = 'merchant_portal',
   LANDING_PAGE = 'landing_page',
   AGENT_ONBOARDING = 'agent_onboarding',
+  SUPER_ADMIN = 'super_admin',
   ADMIN = 'admin',
   OTHER = 'other',
 }
