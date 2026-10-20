@@ -63,9 +63,7 @@ export class AdminService {
       emailVerified: true,
     });
 
-    const repository = this.profile(role.name);
-
-    await repository.create({
+    await this.staff.create({
       ...others,
       userId: user._id,
       createdBy: creator._id,
@@ -222,19 +220,5 @@ export class AdminService {
     await this.rolePermission.deleteMany({ roleId, permissionId: { $in: permissionIds } });
 
     return { data: null, message: 'Permissions removed successfully' };
-  }
-
-  /**
-   * PRIVATE METHOD
-   */
-  private profile(role: string) {
-    const repositories = {
-      staff: this.staff,
-    };
-
-    const repository = repositories[role.toLowerCase()];
-    if (!repository) throw new BadRequestException(`No repository configured for role: ${role}`);
-
-    return repository;
   }
 }
