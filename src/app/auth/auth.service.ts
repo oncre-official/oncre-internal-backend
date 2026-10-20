@@ -30,9 +30,7 @@ export class AuthService {
     const userLookup = buildUserLookupQuery(value);
     const conditions = [userLookup];
 
-    const options = {
-      populate: [{ path: 'role', populate: { path: 'permissions', populate: { path: 'permission' } } }],
-    };
+    const options = { populate: [{ path: 'role' }] };
 
     const user = await this.user.findOne({ $or: conditions }, options);
     if (!user) throw new NotFoundException('User with this phone number or email does not exist.');

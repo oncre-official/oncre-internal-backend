@@ -24,7 +24,7 @@ export class UserService {
     const { _id } = userDoc;
 
     const options = {
-      populate: [{ path: 'role', populate: { path: 'permissions' } }],
+      populate: [{ path: 'role', populate: { path: 'permissions', populate: { path: 'permission' } } }],
     };
 
     const user = await this.user.findById(_id, options);
