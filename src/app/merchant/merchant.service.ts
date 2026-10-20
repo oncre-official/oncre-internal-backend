@@ -121,9 +121,9 @@ export class MerchantService {
     const merchant = await this.merchant.findById(id);
     if (!merchant) throw new NotFoundException('Merchant not found');
 
-    const updated = await this.merchant.updateById(id, { is_active: false });
+    merchant.updateOne({ status: MerchantStatus.IN_ACTIVE });
 
-    return { data: updated, message: 'Merchant deactivated successfully' };
+    return { data: merchant, message: 'Merchant deactivated successfully' };
   }
 
   async reject(id: string): Promise<ServiceResponse<Merchant>> {

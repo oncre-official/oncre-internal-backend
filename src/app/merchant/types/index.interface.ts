@@ -6,6 +6,7 @@ export enum MerchantType {
 export enum MerchantStatus {
   PENDING = 'pending',
   ACTIVE = 'active',
+  IN_ACTIVE = 'in_active',
   SUSPENDED = 'suspended',
 }
 
