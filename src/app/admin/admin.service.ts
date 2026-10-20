@@ -4,6 +4,8 @@ import { generatePassword } from '@on/helpers/password';
 import { buildUserLookupQueryFromPayload } from '@on/helpers/user';
 import { ServiceResponse } from '@on/utils/types';
 
+import { LogService } from '../log/log.service';
+import { AuditAction, AuditModule } from '../log/type/audit-log.interface';
 import { Role } from '../role/model/role.model';
 import { PermissionRepository } from '../role/repository/permission.repository';
 import { RolePermissionRepository } from '../role/repository/role-permission.repository';
@@ -22,6 +24,7 @@ import { UpdateUserRoleDto } from './dto/user-role.dto';
 @Injectable()
 export class AdminService {
   constructor(
+    private readonly log: LogService,
     private readonly user: UserRepository,
     private readonly role: RoleRepository,
     private readonly staff: StaffRepository,
@@ -74,7 +77,26 @@ export class AdminService {
       createdBy: creator._id,
     };
 
-    await this.staff.create(staffPayload);
+    const staff = await this.staff.create(staffPayload);
+
+    await this.log.record(creator, {
+      action: AuditAction.CREATE,
+      module: AuditModule.USER,
+      description: `User ${String(user?._id)} created with role ${role.name}`,
+      recordId: user._id,
+      recordType: 'user',
+      recordReference: String(user._id),
+      metadata: {
+        userId: String(user._id),
+        roleId: String(role._id),
+        roleName: role.name,
+        email: user.email ?? null,
+        phone: user.phone ?? null,
+        staffId: String(staff._id),
+        staffCode: staff.code,
+        createdBy: String(creator._id),
+      },
+    });
 
     const data = { ...user.toObject(), password };
 

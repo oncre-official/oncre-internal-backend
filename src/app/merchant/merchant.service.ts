@@ -7,6 +7,8 @@ import { buildUserLookupQuery } from '@on/helpers/user';
 import { QueryDto } from '@on/utils/dto/query.dto';
 import { ServiceResponse } from '@on/utils/types';
 
+import { LogService } from '../log/log.service';
+import { AuditAction, AuditModule } from '../log/type/audit-log.interface';
 import { RoleRepository } from '../role/repository/role.repository';
 import { SharedService } from '../shared/shared.service';
 import { User } from '../user/model/user.model';
@@ -22,6 +24,7 @@ const APPROVAL_REQUIRED_CHANNELS = ['sales', 'field-agent'];
 @Injectable()
 export class MerchantService {
   constructor(
+    private readonly log: LogService,
     private readonly user: UserRepository,
     private readonly role: RoleRepository,
     private readonly shared: SharedService,
@@ -104,6 +107,22 @@ export class MerchantService {
     };
 
     const merchant = await this.merchant.create(merchantPayload);
+
+    await this.log.record(creator, {
+      action: AuditAction.CREATE,
+      module: AuditModule.MERCHANT,
+      description: `Merchant ${merchant.name} (${merchant.merchantId}) created`,
+      recordId: merchant._id,
+      recordType: 'merchant',
+      recordReference: merchant.merchantId,
+      metadata: {
+        merchantId: merchant.merchantId,
+        userId: String(user._id),
+        channel: merchant.channel,
+        status: merchant.status,
+        createdBy: String(creator._id),
+      },
+    });
 
     const data = { ...merchant.toObject() };
 
