@@ -37,6 +37,14 @@ export class Customer extends Document implements ICustomer {
   @Prop({ required: false })
   address: string;
 
+  @ApiProperty({ description: 'State associated with the customer', type: String, required: false })
+  @Prop({ type: Types.ObjectId, ref: 'State', required: false })
+  stateId?: ObjectId;
+
+  @ApiProperty({ description: 'Local government area associated with the customer', type: String, required: false })
+  @Prop({ type: Types.ObjectId, ref: 'Lga', required: false })
+  lgaId?: ObjectId;
+
   @ApiProperty()
   @Prop({ enum: CustomerStatus, required: true, default: CustomerStatus.ACTIVE })
   status: CustomerStatus;
@@ -58,6 +66,20 @@ CustomerSchema.virtual('user', {
 CustomerSchema.virtual('creator', {
   ref: 'User',
   localField: 'createdBy',
+  foreignField: '_id',
+  justOne: true,
+});
+
+CustomerSchema.virtual('state', {
+  ref: 'State',
+  localField: 'stateId',
+  foreignField: '_id',
+  justOne: true,
+});
+
+CustomerSchema.virtual('lga', {
+  ref: 'Lga',
+  localField: 'lgaId',
   foreignField: '_id',
   justOne: true,
 });

@@ -15,6 +15,7 @@ import {
   IsObject,
   IsNotEmpty,
 } from 'class-validator';
+import { ObjectId } from 'mongodb';
 
 import { Product } from '@on/app/merchant/types/index.interface';
 
@@ -56,6 +57,22 @@ export class CreateCaseDto {
   @IsOptional()
   @IsString()
   customerPhone: string;
+
+  @ApiPropertyOptional({
+    description: 'ID of the state associated with the customer',
+    example: '671234567890abcdef123456',
+  })
+  @IsMongoId()
+  @IsOptional()
+  stateId?: ObjectId;
+
+  @ApiPropertyOptional({
+    description: 'ID of the local government area associated with the customer',
+    example: '671234567890abcdef123457',
+  })
+  @IsMongoId()
+  @IsOptional()
+  lgaId?: ObjectId;
 
   @ApiProperty({ example: 250000, description: 'Current outstanding balance' })
   @IsNumber()

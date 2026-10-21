@@ -16,6 +16,8 @@ export interface ICustomer extends IBaseType {
   key: string;
   name: string;
   address: string;
+  stateId?: ObjectId;
+  lgaId?: ObjectId;
   status: CustomerStatus;
   businessName?: string;
 }
@@ -27,4 +29,6 @@ export interface ICreateCustomer {
   businessName?: string;
   address?: string;
   createdBy?: ObjectId;
+  stateId?: ObjectId;
+  lgaId?: ObjectId;
 }

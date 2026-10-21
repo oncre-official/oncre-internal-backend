@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional, Matches } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, Matches, IsMongoId } from 'class-validator';
+import { ObjectId } from 'mongodb';
 
 import { ICreateCustomer } from '../types/customer.interface';
 
@@ -26,6 +27,22 @@ export class CreateCustomerDto implements ICreateCustomer {
   @IsString()
   @IsOptional()
   address?: string;
+
+  @ApiPropertyOptional({
+    description: 'ID of the state associated with the customer',
+    example: '671234567890abcdef123456',
+  })
+  @IsMongoId()
+  @IsOptional()
+  stateId?: ObjectId;
+
+  @ApiPropertyOptional({
+    description: 'ID of the local government area associated with the customer',
+    example: '671234567890abcdef123457',
+  })
+  @IsMongoId()
+  @IsOptional()
+  lgaId?: ObjectId;
 }
 
 export class CustomerDto extends CreateCustomerDto {

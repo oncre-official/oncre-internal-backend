@@ -93,7 +93,13 @@ export class CaseService {
 
     const customer: any = customerId
       ? await this.customer.findOne({ _id: customerId })
-      : await this.customer.findOrCreate({ name: customerName, phone: customerPhone, createdBy: creatorId });
+      : await this.customer.findOrCreate({
+          name: customerName,
+          phone: customerPhone,
+          createdBy: creatorId,
+          ...(payload.stateId && { stateId: payload.stateId }),
+          ...(payload.lgaId && { lgaId: payload.lgaId }),
+        });
 
     const caseQuery = {
       merchantId: merchant?._id,
