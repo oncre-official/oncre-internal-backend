@@ -51,14 +51,14 @@ export class CaseService {
           localField: 'customerId',
           foreignField: '_id',
           as: 'customer',
-          searchFields: ['name', 'businessName'],
+          searchFields: ['name', 'businessName', 'key'],
         },
         {
           from: 'merchants',
           localField: 'merchantId',
           foreignField: '_id',
           as: 'merchant',
-          searchFields: ['name', 'storeName', 'email', 'type', 'channel'],
+          searchFields: ['name', 'storeName', 'email', 'type', 'channel', 'location'],
         },
       ],
     });
@@ -426,7 +426,7 @@ export class CaseService {
   private async sendSms(merchant: Merchant, customer: Customer, newCase: CaseDocument): Promise<void> {
     const notifications: Promise<unknown>[] = [];
 
-    const caseId = String(newCase._id);
+    const caseId = String(newCase.caseId);
     const amount = Number(newCase.amount ?? 0).toLocaleString('en-NG');
     const merchantName = merchant.name;
     const merchantPhone = merchant.phone;
