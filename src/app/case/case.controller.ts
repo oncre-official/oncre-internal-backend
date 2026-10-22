@@ -88,7 +88,7 @@ export class CaseController {
   })
   @ApiOkResponse({ description: 'Case uploaded successfully', type: ApiResponseDTO })
   @ApiConsumes('multipart/form-data')
-  @Roles('admin', 'super-admin')
+  @Roles('admin', 'super-admin', 'recovery-admin', 'recovery-officer')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @FormDataRequest()
   @Post('/bulk')
