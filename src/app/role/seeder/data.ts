@@ -1,6 +1,14 @@
 const actions = ['create', 'read', 'update', 'delete'] as const;
 
-const resources = ['users', 'merchants', 'permissions', 'recovery', 'cases', 'settings'] as const;
+const resources = [
+  'users',
+  'merchants',
+  'permissions',
+  'recovery-admin',
+  'recovery-officer',
+  'cases',
+  'settings',
+] as const;
 
 export const permissions = [
   ...resources.flatMap((resource) =>

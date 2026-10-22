@@ -24,15 +24,13 @@ export enum HttpMethod {
 
 export interface ILog extends IBaseType {
   userId?: ObjectId;
-  customerId?: ObjectId;
-  name: string;
-  level: LogLevel;
-  method?: HttpMethod;
-  path?: string;
-  statusCode?: number;
-  ip?: string;
+  action: string;
+  route: string;
+  method: HttpMethod;
+  log: LogLevel;
+  reason: string;
+  ip: string;
   userAgent?: string;
-  duration?: number;
   meta?: Record<string, any>;
   error?: Record<string, any>;
 }

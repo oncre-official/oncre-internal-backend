@@ -40,7 +40,7 @@ export class CaseController {
     description: 'Allows users get cases',
   })
   @ApiOkResponse({ description: 'Get cases successful ', type: [Case] })
-  @Roles('admin', 'super-admin', 'sales', 'field-agent', 'recovery')
+  @Roles('admin', 'super-admin', 'sales', 'field-agent', 'recovery-admin', 'recovery-officer')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Get()
   async findCase(@Query() query: QueryCaseDto, @Res() res: Response, @Req() req: Request): Promise<ResponseDTO> {
@@ -63,7 +63,7 @@ export class CaseController {
     description: 'Allows users create case',
   })
   @ApiOkResponse({ description: 'Create case successful ', type: ApiResponseDTO })
-  @Roles('admin', 'super-admin', 'recovery', 'sales')
+  @Roles('admin', 'super-admin', 'recovery-admin', 'recovery-officer')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Post('/')
   async createCase(
@@ -113,7 +113,7 @@ export class CaseController {
     description: 'Allows users to assign cases',
   })
   @ApiOkResponse({ description: 'Create case successful ', type: ApiResponseDTO })
-  @Roles('admin', 'super-admin', 'recovery', 'sales')
+  @Roles('admin', 'super-admin', 'recovery-admin', 'recovery-officer')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Post(':id/assign')
   async assign(

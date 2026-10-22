@@ -14,40 +14,32 @@ export class Log implements ILog {
   userId: ObjectId;
 
   @ApiProperty()
-  @Prop({ type: Types.ObjectId, ref: 'Customer', required: true })
-  customerId: ObjectId;
-
-  @ApiProperty()
   @Prop({ required: true, index: true })
-  name: string;
+  action: string;
 
   @ApiProperty()
-  @Prop({ type: String, enum: LogLevel, default: LogLevel.INFO, index: true })
-  level: LogLevel;
+  @Prop({ required: true })
+  route: string;
 
   @ApiProperty()
   @Prop({ type: String, enum: HttpMethod })
-  method?: HttpMethod;
+  method: HttpMethod;
+
+  @ApiProperty()
+  @Prop({ type: String, enum: LogLevel })
+  log: LogLevel;
 
   @ApiProperty()
   @Prop({ type: String })
-  path?: string;
-
-  @ApiProperty()
-  @Prop({ type: Number })
-  statusCode?: number;
+  reason: string;
 
   @ApiProperty()
   @Prop({ type: String })
-  ip?: string;
+  ip: string;
 
   @ApiProperty()
   @Prop({ type: String })
   userAgent?: string;
-
-  @ApiProperty()
-  @Prop()
-  duration?: number;
 
   @ApiProperty()
   @Prop({ type: Object })

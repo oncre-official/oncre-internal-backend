@@ -20,16 +20,18 @@ export abstract class BaseGuard {
     const forwardedFor = request.headers['x-forwarded-for'] || request.headers['x-real-ip'];
     const ip = forwardedFor ? (forwardedFor as string).split(',')[0] : request.ip;
 
-    await this.log.create({
-      userId: user?._id,
-      action: 'ACCESS_DENIED',
-      route: request.originalUrl || request.url,
-      method: request.method,
-      reason,
-      ip_address: ip || request.connection.remoteAddress,
-      userAgent: request.headers['user-agent'],
-      createdAt: new Date(),
-    });
+    await this.log
+      .create({
+        userId: user?._id,
+        action: 'ACCESS_DENIED',
+        route: request.originalUrl || request.url,
+        method: request.method,
+        reason,
+        ip: ip || request.connection.remoteAddress,
+        userAgent: request.headers['user-agent'],
+        createdAt: new Date(),
+      })
+      .catch((error) => console.log(error));
 
     throw new ForbiddenException('You do not have permission to access this resource.');
   }
