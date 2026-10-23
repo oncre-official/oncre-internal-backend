@@ -11,7 +11,7 @@ import { Customer } from '../customer/model/customer.model';
 import { CustomerRepository } from '../customer/repository/customer.repository';
 import { LogService } from '../log/log.service';
 import { AuditAction, AuditModule, AuditStatus } from '../log/type/audit-log.interface';
-import { Merchant } from '../merchant/model/merchant.model';
+import { Merchant, MerchantDocument } from '../merchant/model/merchant.model';
 import { MerchantRepository } from '../merchant/repository/merchant.repository';
 import { MerchantType } from '../merchant/types/index.interface';
 import { SharedService } from '../shared/shared.service';
@@ -110,7 +110,7 @@ export class CaseService {
     const caseExist = await this.cases.findOne(caseQuery);
     if (caseExist) throw new BadRequestException('A recovery case already active for debtor and merchant');
 
-    const caseId = await this.shared.generateSequentialId('caseId', 'CA', 5);
+    const caseId = await this.generateCaseId(merchant);
 
     const casePayload = {
       ...payload,
@@ -311,7 +311,7 @@ export class CaseService {
     const caseExist = await this.cases.findOne(caseQuery);
     if (caseExist) throw new BadRequestException('A recovery case already active for debtor and merchant');
 
-    const caseId = await this.shared.generateSequentialId('caseId', 'CA', 5);
+    const caseId = await this.generateCaseId(merchant);
 
     const data = await this.cases.create({
       ...payload,
@@ -404,9 +404,7 @@ export class CaseService {
     }
 
     if (value instanceof Date) {
-      if (Number.isNaN(value.getTime())) {
-        throw new BadRequestException('Invalid due date');
-      }
+      if (Number.isNaN(value.getTime())) throw new BadRequestException('Invalid due date');
 
       const year = value.getFullYear();
       const month = String(value.getMonth() + 1).padStart(2, '0');
@@ -418,8 +416,6 @@ export class CaseService {
     const sanitized = this.sanitizeExcelValue(value);
 
     if (!sanitized) return undefined;
-
-    // Accept YYYY-MM-DD without converting it through a timezone.
     if (/^\d{4}-\d{2}-\d{2}$/.test(sanitized)) {
       const [year, month, day] = sanitized.split('-').map(Number);
       const date = new Date(Date.UTC(year, month - 1, day));
@@ -434,6 +430,12 @@ export class CaseService {
     throw new BadRequestException('Due date must be a valid Excel date or YYYY-MM-DD');
   }
 
+  private async generateCaseId(merchant: MerchantDocument): Promise<string> {
+    const prefix = merchant.type === MerchantType.FINANCIAL_INSTITUTION ? 'CF' : 'CA';
+
+    return this.shared.generateSequentialId('caseId', prefix, 5);
+  }
+
   private async sendSms(merchant: Merchant, customer: Customer, newCase: CaseDocument): Promise<void> {
     const notifications: Promise<unknown>[] = [];
 
@@ -443,24 +445,27 @@ export class CaseService {
     const merchantPhone = merchant.phone;
 
     const merchantMessage = `Hello ${merchant.name},
-     Case #${caseId} is now active on OnCre.
-     We've received your portfolio of ₦${amount}, and our recovery agents are already reaching out to your debtors.
-     We will update you on progress. Let's get you paid.- Team OnCre`;
+Case #${caseId} is now active on OnCRE.
+We've received your portfolio of ₦${amount}, and our recovery agents are already reaching out to your debtors.
+We will update you on progress. Let's get you paid.- Team OnCRE`;
 
-    const customerMessage = `Hello ${customer.name}, OnCre has opened recovery Case ID ${caseId} for your overdue ${merchantName} balance of ₦${amount}.
-     Can you pay in full? If not, we can discuss a realistic instalment plan, starting with an amount you can afford
-     Call ${merchantPhone} or WhatsApp ${merchantPhone}. If any detail is wrong, contact us.`;
+    const customerMessage = `Hello ${customer.name}, 
+OnCRE has opened recovery Case ID ${caseId} for your overdue ${merchantName} balance of ₦${amount}.
+Can you pay in full? If not, we can discuss a realistic instalment plan, starting with an amount you can afford
+Call ${merchantPhone} or WhatsApp ${merchantPhone}. If any detail is wrong, contact us.`;
 
     if (merchant.type === MerchantType.STANDARD) {
       notifications.push(
-        this.termii.sendSMS(merchant.phone, merchantMessage).catch((error) => {
-          this.logger.error(`Failed to send case creation SMS to merchant ${String(merchant._id)}: ${error.message}`);
-        }),
+        this.termii
+          .sendSMS(merchant.phone, merchantMessage, { senderId: 'OnCRE', channel: 'generic' })
+          .catch((error) => {
+            this.logger.error(`Failed to send case creation SMS to merchant ${String(merchant._id)}: ${error.message}`);
+          }),
       );
     }
 
     notifications.push(
-      this.termii.sendSMS(customer.phone, customerMessage).catch((error) => {
+      this.termii.sendSMS(customer.phone, customerMessage, { senderId: 'OnCRE', channel: 'generic' }).catch((error) => {
         this.logger.error(`Failed to send case creation SMS to customer ${String(customer._id)}: ${error.message}`);
       }),
     );
