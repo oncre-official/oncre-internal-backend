@@ -14,6 +14,7 @@ import {
   ValidateNested,
   IsObject,
   IsNotEmpty,
+  ArrayMinSize,
 } from 'class-validator';
 import { ObjectId } from 'mongodb';
 
@@ -163,6 +164,16 @@ export class CreateCaseDto {
 }
 
 export class AssignCaseDto {
+  @ApiProperty({
+    description: 'IDs of the cases to assign',
+    example: ['671234567890123456789012', '671234567890123456789013'],
+    type: [String],
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsMongoId({ each: true })
+  caseIds: string[];
+
   @ApiProperty()
   @IsOptional()
   @IsNotEmpty()

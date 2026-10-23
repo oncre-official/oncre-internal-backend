@@ -232,21 +232,32 @@ export class CaseService {
     };
   }
 
-  async assign(caseId: string, payload: AssignCaseDto): Promise<ServiceResponse<Case>> {
-    const { staffId } = payload;
-
-    const existingCase = await this.cases.findById(caseId);
-    if (!existingCase) throw new NotFoundException('Case not found');
+  async assign(payload: AssignCaseDto): Promise<ServiceResponse<Case[]>> {
+    const { staffId, caseIds } = payload;
 
     const staff = await this.staff.findById(staffId);
-    if (!staff) throw new NotFoundException('Agent not found');
+    if (!staff) throw new NotFoundException('Staff member not found');
 
-    await existingCase.updateOne({
-      agentId: staffId,
-      supervisorId: staff?.supervisorId,
-    });
+    const uniqueCaseIds = [...new Set(caseIds)];
+    const cases = await Promise.all(uniqueCaseIds.map((caseId) => this.cases.findById(caseId)));
 
-    return { message: 'Case assigned to agent successfully', data: existingCase };
+    const missingCaseIds = uniqueCaseIds.filter((_, index) => !cases[index]);
+    if (missingCaseIds.length > 0)
+      throw new NotFoundException(`The following cases were not found: ${missingCaseIds.join(', ')}`);
+
+    await Promise.all(
+      cases.map((existingCase) => existingCase.updateOne({ agentId: staffId, supervisorId: staff.supervisorId })),
+    );
+
+    const updatedCases = await Promise.all(uniqueCaseIds.map((caseId) => this.cases.findById(caseId)));
+
+    return {
+      message:
+        uniqueCaseIds.length === 1
+          ? 'Case assigned to staff member successfully'
+          : `${uniqueCaseIds.length} cases assigned to staff member successfully`,
+      data: updatedCases.filter(Boolean),
+    };
   }
 
   /**

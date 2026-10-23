@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiConsumes,
@@ -40,7 +40,7 @@ export class CaseController {
     description: 'Allows users get cases',
   })
   @ApiOkResponse({ description: 'Get cases successful ', type: [Case] })
-  @Roles('admin', 'super-admin',  'recovery-admin', 'recovery-officer', 'recovery-admin', 'recovery-officer')
+  @Roles('admin', 'super-admin', 'recovery-admin', 'recovery-officer')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Get()
   async findCase(@Query() query: QueryCaseDto, @Res() res: Response, @Req() req: Request): Promise<ResponseDTO> {
@@ -113,17 +113,12 @@ export class CaseController {
     description: 'Allows users to assign cases',
   })
   @ApiOkResponse({ description: 'Create case successful ', type: ApiResponseDTO })
-  @Roles('admin', 'super-admin', 'recovery-admin', 'recovery-officer')
+  @Roles('admin', 'super-admin', 'recovery-admin')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Post(':id/assign')
-  async assign(
-    @Body() payload: AssignCaseDto,
-    @Param('id') id: string,
-    @Res() res: Response,
-    @Req() req: Request,
-  ): Promise<ResponseDTO> {
+  @Post('assign')
+  async assign(@Body() payload: AssignCaseDto, @Res() res: Response, @Req() req: Request): Promise<ResponseDTO> {
     try {
-      const response = await this.caseService.assign(id, payload);
+      const response = await this.caseService.assign(payload);
 
       return JsonResponse(res, response);
     } catch (error) {
