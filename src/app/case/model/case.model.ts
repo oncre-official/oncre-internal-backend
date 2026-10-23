@@ -22,7 +22,7 @@ import {
 
 export type CaseDocument = HydratedDocument<Case>;
 
-@Schema({ collection: 'cases', versionKey: false })
+@Schema({ collection: 'cases', versionKey: false, timestamps: true })
 export class Case implements ICase {
   @ApiProperty({ description: 'Case ID, unique within the client' })
   @Prop({ type: String, required: true })
