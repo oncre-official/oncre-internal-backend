@@ -53,7 +53,7 @@ export class MerchantController {
     description: 'Allows users create merchant',
   })
   @ApiOkResponse({ description: 'Create merchant successful ', type: ApiResponseDTO })
-  @Roles('admin', 'super-admin', 'sales', 'field-agent')
+  @Roles('admin', 'super-admin',  'recovery-admin', 'recovery-officer')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Post('/')
   async createMerchant(
