@@ -159,6 +159,8 @@ export class CaseService {
     const rows = XLSX.utils.sheet_to_json<ExcelCaseRow>(worksheet, { defval: null, raw: false, blankrows: false });
     if (!rows.length) throw new BadRequestException('Excel file contains no data rows');
 
+    console.log(rows);
+
     const results: CaseUploadResult[] = [];
 
     for (const [index, row] of rows.entries()) {
@@ -361,7 +363,7 @@ export class CaseService {
       outstandingBalance,
       amount: outstandingBalance,
       product: this.sanitizeExcelValue(row.product),
-      paymentAccount: this.sanitizeExcelValue(row.product),
+      paymentAccount: this.sanitizeExcelValue(row.paymentAccount),
       comment: this.sanitizeExcelValue(row.product),
       description: this.sanitizeExcelValue(row.description),
       merchantName: this.sanitizeExcelValue(row.merchantName),
