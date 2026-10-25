@@ -13,7 +13,6 @@ import { Roles } from '@on/decorators/roles.decorator';
 import { User } from '@on/decorators/user.decorator';
 import { ErrorResponse, JsonResponse } from '@on/handlers/responses';
 import { requestFilter } from '@on/helpers/filter';
-import { FileDto } from '@on/utils/dto/file.dto';
 import { ApiResponseDTO } from '@on/utils/dto/response.dto';
 import { ResponseDTO } from '@on/utils/types';
 
@@ -22,7 +21,7 @@ import { RoleGuard } from '../auth/guard/role.guard';
 import { User as UserDocument } from '../user/model/user.model';
 
 import { CaseService } from './case.service';
-import { AssignCaseDto, CreateCaseDto } from './dto/case.dto';
+import { AssignCaseDto, BulkUploadDto, CreateCaseDto } from './dto/case.dto';
 import { QueryCaseDto } from './dto/query.dto';
 import { Case } from './model/case.model';
 
@@ -93,7 +92,7 @@ export class CaseController {
   @FormDataRequest()
   @Post('/bulk')
   async uploadCase(
-    @Body() payload: FileDto,
+    @Body() payload: BulkUploadDto,
     @User() user: UserDocument,
     @Res() res: Response,
     @Req() req: Request,

@@ -77,8 +77,16 @@ export class Case implements ICase {
   product: Product;
 
   @ApiPropertyOptional()
-  @Prop({ type: String })
+  @Prop({ type: String, required: false })
   description: string;
+
+  @ApiPropertyOptional()
+  @Prop({ type: String, required: false })
+  paymentAccount: string;
+
+  @ApiPropertyOptional()
+  @Prop({ type: String, required: false })
+  comment: string;
 
   @ApiProperty({ enum: CaseStatus })
   @Prop({ type: String, enum: CaseStatus, required: true, default: CaseStatus.NEW_IMPORTED })

@@ -31,6 +31,9 @@ export interface ICase extends IBaseType {
   product: Product;
   description: string;
 
+  paymentAccount: string;
+  comment: string;
+
   status: CaseStatus;
   nextAction: string;
   nextActionAt: Date;

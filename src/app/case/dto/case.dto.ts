@@ -13,12 +13,12 @@ import {
   Min,
   ValidateNested,
   IsObject,
-  IsNotEmpty,
   ArrayMinSize,
 } from 'class-validator';
 import { ObjectId } from 'mongodb';
 
 import { Product } from '@on/app/merchant/types/index.interface';
+import { FileDto } from '@on/utils/dto/file.dto';
 
 import { RecoveryClassification, RecoveryMode } from '../types/index.interface';
 
@@ -117,6 +117,16 @@ export class CreateCaseDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsString()
+  paymentAccount?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  comment?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsMongoId()
   agentId?: string;
 
@@ -176,8 +186,14 @@ export class AssignCaseDto {
 
   @ApiProperty()
   @IsOptional()
-  @IsNotEmpty()
   staffId: string;
 }
 
 export class UpdateCaseDto extends PartialType(CreateCaseDto) {}
+
+export class BulkUploadDto extends FileDto {
+  @ApiProperty()
+  @IsMongoId()
+  @IsOptional()
+  merchantId: string;
+}

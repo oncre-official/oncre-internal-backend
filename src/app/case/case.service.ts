@@ -296,8 +296,18 @@ export class CaseService {
 
     if (dueDate && new Date(dueDate) > new Date()) throw new BadRequestException('Due date cannot be in the future');
 
-    const merchant = await this.findOrCreateMatch(this.merchant, merchantName, merchantPhone, creator?._id);
-    if (merchantId && !merchant) throw new NotFoundException('Merchant not found');
+    let merchant: MerchantDocument;
+
+    if (merchantId) {
+      merchant = await this.merchant.findById(merchantId);
+      if (!merchant) throw new NotFoundException('Merchant not found');
+    } else {
+      if (!merchantName || !merchantPhone)
+        throw new BadRequestException('Merchant name and phone are required when merchant ID is not provided');
+
+      merchant = await this.findOrCreateMatch(this.merchant, merchantName, merchantPhone, creator?._id);
+      if (!merchant) throw new NotFoundException('Merchant not found');
+    }
 
     const customer = await this.findOrCreateMatch(this.customer, customerName, customerPhone, creator?._id);
     if (!customer) throw new NotFoundException('Customer not found');
@@ -340,6 +350,8 @@ export class CaseService {
       outstandingBalance,
       amount: outstandingBalance,
       product: this.sanitizeExcelValue(row.product),
+      paymentAccount: this.sanitizeExcelValue(row.product),
+      comment: this.sanitizeExcelValue(row.product),
       description: this.sanitizeExcelValue(row.description),
       merchantName: this.sanitizeExcelValue(row.merchantName),
       merchantPhone: this.normalizePhone(row.merchantPhone),
