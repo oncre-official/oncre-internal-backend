@@ -4,7 +4,6 @@ import * as XLSX from 'xlsx';
 
 import { joinSearchQuery } from '@on/helpers/search';
 import { TermiiService } from '@on/services/termii/service';
-import { FileDto } from '@on/utils/dto/file.dto';
 import { ServiceResponse } from '@on/utils/types';
 
 import { Customer } from '../customer/model/customer.model';
@@ -18,11 +17,17 @@ import { SharedService } from '../shared/shared.service';
 import { StaffRepository } from '../staff/repository/staff.repository';
 import { User } from '../user/model/user.model';
 
-import { AssignCaseDto, CreateCaseDto } from './dto/case.dto';
+import { AssignCaseDto, BulkUploadDto, CreateCaseDto } from './dto/case.dto';
 import { QueryCaseDto } from './dto/query.dto';
 import { Case, CaseDocument } from './model/case.model';
 import { CaseRepository } from './repository/case.repository';
-import { CaseSource, CaseStatus, CaseUploadResult, ExcelCaseRow } from './types/index.interface';
+import {
+  CaseSource,
+  CaseStatus,
+  CaseUploadResult,
+  ExcelCaseRow,
+  RecoveryClassification,
+} from './types/index.interface';
 
 @Injectable()
 export class CaseService {
@@ -141,8 +146,8 @@ export class CaseService {
     return { data, message: `Case successfully created` };
   }
 
-  async upload(creator: User, payload: FileDto): Promise<ServiceResponse<Case | any>> {
-    const { file } = payload;
+  async upload(creator: User, payload: BulkUploadDto): Promise<ServiceResponse<Case | any>> {
+    const { file, merchantId } = payload;
 
     const workbook = XLSX.read(file.buffer, { type: 'buffer', cellDates: true });
 
@@ -169,7 +174,11 @@ export class CaseService {
       try {
         this.validateExcelCaseRow(row);
 
-        const createdCase = await this.createCaseRecord(creator, casePayload, CaseSource.BULK_IMPORT);
+        const createdCase = await this.createCaseRecord(
+          creator,
+          { ...casePayload, merchantId },
+          CaseSource.BULK_IMPORT,
+        );
 
         results.push({
           row: excelRow,
@@ -275,7 +284,6 @@ export class CaseService {
   private validateExcelCaseRow(row: ExcelCaseRow): void {
     if (!row.customerName?.trim()) throw new BadRequestException('Customer name is required');
     if (!row.customerPhone?.trim()) throw new BadRequestException('Customer phone is required');
-    if (!row.classification?.trim()) throw new BadRequestException('Classification is required');
 
     if (
       row.outstandingBalance === null ||
@@ -323,9 +331,15 @@ export class CaseService {
 
     const caseId = await this.generateCaseId(merchant);
 
+    const classification =
+      merchant.type === MerchantType.FINANCIAL_INSTITUTION
+        ? RecoveryClassification.FINANCIAL_INSTITUTION
+        : RecoveryClassification.MERCHANT;
+
     const data = await this.cases.create({
       ...payload,
       caseId,
+      classification,
       merchantId: merchant?._id,
       customerId: customer?._id,
       debtAge: this.calculateDebtAge(dueDate),
@@ -338,15 +352,12 @@ export class CaseService {
   }
 
   private mapExcelRowToCreateCaseDto(row: ExcelCaseRow) {
-    const classification = this.sanitizeExcelValue(row.classification).toUpperCase();
-
     const outstandingBalance = Number(this.sanitizeExcelValue(row.outstandingBalance).replace(/,/g, ''));
 
     return {
       ...row,
       customerName: this.sanitizeExcelValue(row.customerName),
       customerPhone: this.normalizePhone(row.customerPhone),
-      classification,
       outstandingBalance,
       amount: outstandingBalance,
       product: this.sanitizeExcelValue(row.product),

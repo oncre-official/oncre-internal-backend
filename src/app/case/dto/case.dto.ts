@@ -192,7 +192,7 @@ export class AssignCaseDto {
 export class UpdateCaseDto extends PartialType(CreateCaseDto) {}
 
 export class BulkUploadDto extends FileDto {
-  @ApiProperty()
+  @ApiPropertyOptional()
   @IsMongoId()
   @IsOptional()
   merchantId: string;
