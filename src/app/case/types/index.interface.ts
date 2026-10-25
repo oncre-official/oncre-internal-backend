@@ -70,6 +70,8 @@ export interface ExcelCaseRow {
   dueDate?: string | number | Date;
   product?: string;
   description?: string;
+  paymentAccount?: string;
+  comment?: string;
   disputed?: boolean | string;
   deceased?: boolean | string;
   inLegal: boolean | string;

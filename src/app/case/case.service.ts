@@ -364,7 +364,7 @@ export class CaseService {
       amount: outstandingBalance,
       product: this.sanitizeExcelValue(row.product),
       paymentAccount: this.sanitizeExcelValue(row.paymentAccount),
-      comment: this.sanitizeExcelValue(row.product),
+      comment: this.sanitizeExcelValue(row.comment),
       description: this.sanitizeExcelValue(row.description),
       merchantName: this.sanitizeExcelValue(row.merchantName),
       merchantPhone: this.normalizePhone(row.merchantPhone),
