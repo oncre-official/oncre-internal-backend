@@ -492,7 +492,6 @@ export class CaseService {
     const caseId = String(newCase.caseId);
     const amount = Number(newCase.amount ?? 0).toLocaleString('en-NG');
     const merchantName = merchant.name;
-    const merchantPhone = merchant.phone;
 
     const merchantMessage = `Hello ${merchant.name},
 Case #${caseId} is now active on OnCRE.
@@ -502,7 +501,7 @@ We will update you on progress. Let's get you paid.- Team OnCRE`;
     const customerMessage = `Hello ${customer.name}, 
 OnCRE has opened recovery Case ID ${caseId} for your overdue ${merchantName} balance of ₦${amount}.
 Can you pay in full? If not, we can discuss a realistic instalment plan, starting with an amount you can afford
-Call ${merchantPhone} or WhatsApp ${merchantPhone}. If any detail is wrong, contact us.`;
+Call 07127099778 or WhatsApp 08164117652. If any detail is wrong, contact us.`;
 
     if (merchant.type === MerchantType.STANDARD) {
       notifications.push(
