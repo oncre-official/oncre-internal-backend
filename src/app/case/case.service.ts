@@ -84,15 +84,29 @@ export class CaseService {
   }
 
   async create(creator: User, payload: CreateCaseDto): Promise<ServiceResponse<Case>> {
-    const { merchantId, customerId, dueDate, merchantName, merchantPhone, customerPhone, customerName } = payload;
+    const {
+      merchantId,
+      customerId,
+      dueDate,
+      merchantName,
+      merchantPhone,
+      customerPhone,
+      customerName,
+      classification,
+    } = payload;
 
     if (dueDate && new Date(dueDate) > new Date()) throw new BadRequestException('Due date cannot be in the future');
 
     const creatorId = new ObjectId(String(creator._id));
 
+    const type =
+      classification === RecoveryClassification.FINANCIAL_INSTITUTION
+        ? MerchantType.FINANCIAL_INSTITUTION
+        : MerchantType.STANDARD;
+
     const merchant: any = merchantId
       ? await this.merchant.findOne({ _id: merchantId })
-      : await this.merchant.findOrCreate({ name: merchantName, phone: merchantPhone, createdBy: creatorId });
+      : await this.merchant.findOrCreate({ name: merchantName, phone: merchantPhone, createdBy: creatorId, type });
 
     if (merchantId && !merchant) throw new NotFoundException('Merchant not found');
 
@@ -158,8 +172,6 @@ export class CaseService {
 
     const rows = XLSX.utils.sheet_to_json<ExcelCaseRow>(worksheet, { defval: null, raw: false, blankrows: false });
     if (!rows.length) throw new BadRequestException('Excel file contains no data rows');
-
-    console.log(rows);
 
     const results: CaseUploadResult[] = [];
 
@@ -302,7 +314,7 @@ export class CaseService {
   }
 
   private async createCaseRecord(creator: User, payload: any, source: CaseSource): Promise<CaseDocument> {
-    const { merchantId, dueDate, merchantName, merchantPhone, customerName, customerPhone } = payload;
+    const { merchantId, dueDate, merchantName, merchantPhone, customerName, customerPhone, classification } = payload;
 
     if (dueDate && new Date(dueDate) > new Date()) throw new BadRequestException('Due date cannot be in the future');
 
@@ -315,7 +327,7 @@ export class CaseService {
       if (!merchantName || !merchantPhone)
         throw new BadRequestException('Merchant name and phone are required when merchant ID is not provided');
 
-      merchant = await this.findOrCreateMatch(this.merchant, merchantName, merchantPhone, creator?._id);
+      merchant = await this.findOrCreateMatch(this.merchant, merchantName, merchantPhone, creator?._id, classification);
       if (!merchant) throw new NotFoundException('Merchant not found');
     }
 
@@ -333,7 +345,7 @@ export class CaseService {
 
     const caseId = await this.generateCaseId(merchant);
 
-    const classification =
+    const newClassification =
       merchant.type === MerchantType.FINANCIAL_INSTITUTION
         ? RecoveryClassification.FINANCIAL_INSTITUTION
         : RecoveryClassification.MERCHANT;
@@ -341,7 +353,7 @@ export class CaseService {
     const data = await this.cases.create({
       ...payload,
       caseId,
-      classification,
+      classification: newClassification,
       merchantId: merchant?._id,
       customerId: customer?._id,
       debtAge: this.calculateDebtAge(dueDate),
@@ -362,6 +374,7 @@ export class CaseService {
       customerPhone: this.normalizePhone(row.customerPhone),
       outstandingBalance,
       amount: outstandingBalance,
+      classification: this.sanitizeExcelValue(row.classification),
       product: this.sanitizeExcelValue(row.product),
       paymentAccount: this.sanitizeExcelValue(row.paymentAccount),
       comment: this.sanitizeExcelValue(row.comment),
@@ -387,7 +400,13 @@ export class CaseService {
     return this.sanitizeExcelValue(phone).replace(/\D/g, '');
   }
 
-  private async findOrCreateMatch(service: any, name: string, phone: string, creatorId: ObjectId) {
+  private async findOrCreateMatch(
+    service: any,
+    name: string,
+    phone: string,
+    creatorId: ObjectId,
+    classification = RecoveryClassification.MERCHANT,
+  ) {
     const candidates = this.getPhoneCandidates(phone);
 
     if (candidates.length) {
@@ -395,10 +414,16 @@ export class CaseService {
       if (existing) return existing;
     }
 
+    const type =
+      classification === RecoveryClassification.FINANCIAL_INSTITUTION
+        ? MerchantType.FINANCIAL_INSTITUTION
+        : MerchantType.STANDARD;
+
     return service.findOrCreate({
       name,
       phone,
       createdBy: creatorId,
+      type,
     });
   }
 
