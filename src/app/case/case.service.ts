@@ -100,7 +100,7 @@ export class CaseService {
     const creatorId = new ObjectId(String(creator._id));
 
     const type =
-      classification === RecoveryClassification.FINANCIAL_INSTITUTION
+      String(classification) === String('financial_institution')
         ? MerchantType.FINANCIAL_INSTITUTION
         : MerchantType.STANDARD;
 
@@ -415,7 +415,7 @@ export class CaseService {
     }
 
     const type =
-      classification === RecoveryClassification.FINANCIAL_INSTITUTION
+      String(classification) === String('financial_institution')
         ? MerchantType.FINANCIAL_INSTITUTION
         : MerchantType.STANDARD;
 
