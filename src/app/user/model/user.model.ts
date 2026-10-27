@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb';
 import { Document, HydratedDocument, Types } from 'mongoose';
 
 import { Role } from '@on/app/role/model/role.model';
+import { Staff } from '@on/app/staff/model/staff.model';
 import { UserStatus } from '@on/enum';
 
 import { IUser } from '../types/user.interface';
@@ -61,6 +62,9 @@ export class User extends Document implements IUser {
    */
   @ApiHideProperty()
   role: Role;
+
+  @ApiHideProperty()
+  staff: Staff;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
@@ -78,5 +82,12 @@ UserSchema.virtual('role', {
   ref: 'Role',
   localField: 'roleId',
   foreignField: '_id',
+  justOne: true,
+});
+
+UserSchema.virtual('staff', {
+  ref: 'Staff',
+  localField: '_id',
+  foreignField: 'userId',
   justOne: true,
 });
