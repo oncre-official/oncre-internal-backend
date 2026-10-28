@@ -51,7 +51,7 @@ export class TermiiService {
     const payload = {
       to,
       from: options?.senderId ?? this.senderId,
-      sms: `${messageBody}\n\nPowered by OnCRE`,
+      sms: `${messageBody}`,
       type: 'plain',
       channel: options?.channel ?? 'dnd',
       api_key: this.apiKey,
