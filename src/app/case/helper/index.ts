@@ -25,11 +25,11 @@ export function caseRequestFilter(data: Record<string, any>, options: RequestFil
   const filter = requestFilter(query, options);
 
   if (assignmentStatus === CaseAssignmentStatus.ASSIGNED) {
-    filter.agentId = { $exists: true, $nin: [null, ''] };
+    filter.agentId = { $exists: true, $ne: null };
   }
 
   if (assignmentStatus === CaseAssignmentStatus.UNASSIGNED) {
-    filter.$or = [{ agentId: null }, { agentId: { $exists: false } }, { agentId: '' }];
+    filter.$or = [{ agentId: null }, { agentId: { $exists: false } }];
   }
 
   delete filter?.assignmentStatus;
