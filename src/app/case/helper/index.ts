@@ -1,6 +1,6 @@
 import { requestFilter, RequestFilterOptions } from '@on/helpers/filter';
 
-import { QueryCaseDto } from '../dto/query.dto';
+import { CaseAssignmentStatus } from '../dto/query.dto';
 import { Case } from '../model/case.model';
 
 export function isCaseOnHold(newCase: Case) {
@@ -17,18 +17,22 @@ export function getEscalationLevel(day: number): number {
   return 4;
 }
 
-export function caseRequestFilter(data: QueryCaseDto, options: RequestFilterOptions = {}) {
+export function caseRequestFilter(data: Record<string, any>, options: RequestFilterOptions = {}) {
   if (!data) return data;
 
-  const { unassigned, ...query } = data;
+  const { assignmentStatus, ...query } = data;
 
   const filter = requestFilter(query, options);
 
-  if (unassigned === true || String(unassigned) === 'true') {
-    filter.agentId = null;
+  if (assignmentStatus === CaseAssignmentStatus.ASSIGNED) {
+    filter.agentId = { $exists: true, $nin: [null, ''] };
   }
 
-  delete filter?.unassigned;
+  if (assignmentStatus === CaseAssignmentStatus.UNASSIGNED) {
+    filter.$or = [{ agentId: null }, { agentId: { $exists: false } }, { agentId: '' }];
+  }
+
+  delete filter?.assignmentStatus;
 
   return filter;
 }

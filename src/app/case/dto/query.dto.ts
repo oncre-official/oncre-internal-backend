@@ -1,10 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsEnum, IsOptional } from 'class-validator';
 
 import { QueryDto } from '@on/utils/dto/query.dto';
 
 import { CaseSource, CaseStatus, NigerianZone, RecoveryClassification, RecoveryMode } from '../types/index.interface';
+
+export enum CaseAssignmentStatus {
+  ASSIGNED = 'assigned',
+  UNASSIGNED = 'unassigned',
+}
 
 export class QueryCaseDto extends QueryDto {
   @ApiPropertyOptional()
@@ -43,9 +47,8 @@ export class QueryCaseDto extends QueryDto {
   @ApiPropertyOptional()
   supervisorId?: string;
 
-  @ApiPropertyOptional({ description: 'Filter cases that have not been assigned to an agent', type: Boolean })
+  @ApiPropertyOptional({ enum: CaseAssignmentStatus, description: 'Filter cases by agent assignment status' })
   @IsOptional()
-  @Transform(({ value }) => (value === 'true' ? true : value === 'false' ? false : value))
-  @IsBoolean()
-  unassigned?: boolean;
+  @IsEnum(CaseAssignmentStatus)
+  assignmentStatus?: CaseAssignmentStatus;
 }
