@@ -18,7 +18,7 @@ export const users = [
     countryCode: '234',
     phone: '9000000003',
     email: 'recovery.admin@oncre.com',
-    password: 'RecoveryAdmin@123',
+    password: 'Wa',
   },
   {
     role: 'recovery-officer',

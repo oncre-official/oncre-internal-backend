@@ -12,7 +12,6 @@ import { FormDataRequest } from 'nestjs-form-data';
 import { Roles } from '@on/decorators/roles.decorator';
 import { User } from '@on/decorators/user.decorator';
 import { ErrorResponse, JsonResponse } from '@on/handlers/responses';
-import { requestFilter } from '@on/helpers/filter';
 import { ApiResponseDTO } from '@on/utils/dto/response.dto';
 import { ResponseDTO } from '@on/utils/types';
 
@@ -23,6 +22,7 @@ import { User as UserDocument } from '../user/model/user.model';
 import { CaseService } from './case.service';
 import { AssignCaseDto, BulkUploadDto, CreateCaseDto } from './dto/case.dto';
 import { QueryCaseDto } from './dto/query.dto';
+import { caseRequestFilter } from './helper';
 import { Case } from './model/case.model';
 
 import type { Response, Request } from 'express';
@@ -46,7 +46,7 @@ export class CaseController {
     try {
       const { skip, limit } = query;
 
-      const filter = requestFilter(query, { convertToRegex: false });
+      const filter = caseRequestFilter(query, { convertToRegex: false });
 
       const response = await this.caseService.find(filter, skip, limit);
 

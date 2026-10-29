@@ -6,7 +6,7 @@ import { joinSearchQuery } from '@on/helpers/search';
 import { TermiiService } from '@on/services/termii/service';
 import { ServiceResponse } from '@on/utils/types';
 
-import { Customer } from '../customer/model/customer.model';
+import { Customer, CustomerDocument } from '../customer/model/customer.model';
 import { CustomerRepository } from '../customer/repository/customer.repository';
 import { LogService } from '../log/log.service';
 import { AuditAction, AuditModule, AuditStatus } from '../log/type/audit-log.interface';
@@ -28,6 +28,11 @@ import {
   ExcelCaseRow,
   RecoveryClassification,
 } from './types/index.interface';
+
+interface UploadContext {
+  merchantCache: Map<string, MerchantDocument>;
+  customerCache: Map<string, CustomerDocument>;
+}
 
 @Injectable()
 export class CaseService {
@@ -313,7 +318,12 @@ export class CaseService {
     }
   }
 
-  private async createCaseRecord(creator: User, payload: any, source: CaseSource): Promise<CaseDocument> {
+  private async createCaseRecord(
+    creator: User,
+    payload: any,
+    source: CaseSource,
+    context?: UploadContext,
+  ): Promise<CaseDocument> {
     const { merchantId, dueDate, merchantName, merchantPhone, customerName, customerPhone, classification } = payload;
 
     if (dueDate && new Date(dueDate) > new Date()) throw new BadRequestException('Due date cannot be in the future');
@@ -327,11 +337,26 @@ export class CaseService {
       if (!merchantName || !merchantPhone)
         throw new BadRequestException('Merchant name and phone are required when merchant ID is not provided');
 
-      merchant = await this.findOrCreateMatch(this.merchant, merchantName, merchantPhone, creator?._id, classification);
+      merchant = await this.findOrCreateMatch(
+        this.merchant,
+        merchantName,
+        merchantPhone,
+        creator?._id,
+        classification,
+        context?.merchantCache,
+      );
+
       if (!merchant) throw new NotFoundException('Merchant not found');
     }
 
-    const customer = await this.findOrCreateMatch(this.customer, customerName, customerPhone, creator?._id);
+    const customer = await this.findOrCreateMatch(
+      this.customer,
+      customerName,
+      customerPhone,
+      creator?._id,
+      RecoveryClassification.MERCHANT,
+      context?.customerCache,
+    );
     if (!customer) throw new NotFoundException('Customer not found');
 
     const caseQuery = {
@@ -360,7 +385,11 @@ export class CaseService {
       source,
     });
 
-    await this.sendSms(merchant, customer, data);
+    void this.sendSms(merchant, customer, data).catch((error) => {
+      this.logger.error(
+        `Failed to send SMS for case ${data.caseId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    });
 
     return data;
   }
@@ -400,31 +429,10 @@ export class CaseService {
     return this.sanitizeExcelValue(phone).replace(/\D/g, '');
   }
 
-  private async findOrCreateMatch(
-    service: any,
-    name: string,
-    phone: string,
-    creatorId: ObjectId,
-    classification = RecoveryClassification.MERCHANT,
-  ) {
+  private getEntityCacheKey(phone: unknown): string {
     const candidates = this.getPhoneCandidates(phone);
 
-    if (candidates.length) {
-      const existing = await service.findOne({ phone: { $in: candidates } });
-      if (existing) return existing;
-    }
-
-    const type =
-      String(classification) === String('financial_institution')
-        ? MerchantType.FINANCIAL_INSTITUTION
-        : MerchantType.STANDARD;
-
-    return service.findOrCreate({
-      name,
-      phone,
-      createdBy: creatorId,
-      type,
-    });
+    return candidates.sort().join(':');
   }
 
   private getPhoneCandidates(phone: unknown): string[] {
@@ -446,6 +454,41 @@ export class CaseService {
     candidates.add(`234${localNumber}`);
 
     return [...candidates].filter(Boolean);
+  }
+
+  private async findOrCreateMatch(
+    service: any,
+    name: string,
+    phone: string,
+    creatorId: ObjectId,
+    classification = RecoveryClassification.MERCHANT,
+    cache?: Map<string, any>,
+  ) {
+    const candidates = this.getPhoneCandidates(phone);
+
+    const cacheKey = candidates.length ? [...candidates].sort().join(':') : undefined;
+    if (cacheKey && cache?.has(cacheKey)) return cache.get(cacheKey);
+
+    if (candidates.length) {
+      const existing = await service.findOne({ phone: { $in: candidates } });
+      if (existing) return existing;
+    }
+
+    const type =
+      String(classification) === String('financial_institution')
+        ? MerchantType.FINANCIAL_INSTITUTION
+        : MerchantType.STANDARD;
+
+    const entity = await service.findOrCreate({
+      name,
+      phone,
+      createdBy: creatorId,
+      type,
+    });
+
+    if (cacheKey && cache) cache.set(cacheKey, entity);
+
+    return entity;
   }
 
   private sanitizeExcelDate(value: unknown): string | undefined {
