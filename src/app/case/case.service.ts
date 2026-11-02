@@ -542,9 +542,9 @@ We've received your portfolio of ₦${amount}, and our recovery agents are alrea
 We will update you on progress. Let's get you paid.- Team OnCRE`;
 
     const customerMessage = `Hello ${customer.name}, 
-OnCRE has opened recovery Case ID ${caseId} for your overdue ${merchantName} balance of ₦${amount}.
-Can you pay in full? If not, we can discuss a realistic instalment plan, starting with an amount you can afford
-Call 07127099778 or WhatsApp 08164117652. If any detail is wrong, contact us.`;
+OnCRE has opened Payment Resolution Case ${caseId} concerning an outstanding balance of ₦${amount} with creditor ${merchantName}.
+We have been asked to help resolve this payment. Please call 07127099778 or WhatsApp 08164117652 to discuss the next step.
+If this is incorrect or you have paid, let us know.`;
 
     if (merchant.type === MerchantType.STANDARD) {
       notifications.push(
