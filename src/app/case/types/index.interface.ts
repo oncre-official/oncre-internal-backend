@@ -96,3 +96,41 @@ export enum NigerianZone {
   SOUTH_SOUTH = 'SOUTH_SOUTH',
   SOUTH_WEST = 'SOUTH_WEST',
 }
+
+export enum RecoveryScheduleStatus {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  SCHEDULED = 'scheduled',
+  PARTIALLY_SCHEDULED = 'partially_scheduled',
+  FAILED = 'failed',
+}
+
+export enum TaskPriority {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+}
+
+export interface ICaseRecoverySchedule {
+  engine: RecoveryClassification;
+  duration: number;
+  status: RecoveryScheduleStatus;
+  call: {
+    scheduled: boolean;
+    scheduledAt?: Date;
+    total: number;
+  };
+  messaging: {
+    scheduled: boolean;
+    scheduledAt?: Date;
+    total: number;
+  };
+  completed: boolean;
+  attempts: number;
+  lastAttemptAt?: Date;
+  scheduledAt?: Date;
+  completedAt?: Date;
+  lockedAt?: Date;
+  lockUntil?: Date;
+  lastError?: string;
+}

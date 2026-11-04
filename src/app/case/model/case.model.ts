@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ApiHideProperty, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ObjectId } from 'mongodb';
-import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
+import { Document, HydratedDocument, Schema as MongooseSchema } from 'mongoose';
 
 import { Customer } from '@on/app/customer/model/customer.model';
 import { Merchant } from '@on/app/merchant/model/merchant.model';
@@ -18,12 +18,14 @@ import {
   CaseFlagsSchema,
   CaseTags,
   CaseTagsSchema,
+  RecoverySchedule,
+  RecoveryScheduleSchema,
 } from './index.model';
 
 export type CaseDocument = HydratedDocument<Case>;
 
 @Schema({ collection: 'cases', versionKey: false, timestamps: true })
-export class Case implements ICase {
+export class Case extends Document implements ICase {
   @ApiProperty({ description: 'Case ID, unique within the client' })
   @Prop({ type: String, required: true })
   caseId: string;
@@ -39,6 +41,10 @@ export class Case implements ICase {
   @ApiProperty({ enum: RecoveryClassification })
   @Prop({ type: String, enum: RecoveryClassification, required: true })
   classification: RecoveryClassification;
+
+  @ApiPropertyOptional({ description: 'Recovery schedule information', type: () => RecoverySchedule })
+  @Prop({ type: RecoveryScheduleSchema, required: false })
+  schedule: RecoverySchedule;
 
   @ApiProperty({ enum: NigerianZone })
   @Prop({ type: String, enum: NigerianZone })
@@ -204,8 +210,9 @@ CaseSchema.index({ merchantId: 1, caseId: 1 }, { unique: true });
 CaseSchema.index({ status: 1, nextActionAt: 1 });
 CaseSchema.index({ agentId: 1, status: 1 });
 CaseSchema.index({ supervisorId: 1, status: 1 });
-CaseSchema.index({ portfolioId: 1 });
 CaseSchema.index({ batchId: 1 });
+CaseSchema.index({ 'recoverySchedule.status': 1, createdAt: 1 });
+CaseSchema.index({ 'recoverySchedule.status': 1, 'recoverySchedule.lockUntil': 1 });
 
 CaseSchema.virtual('merchant', {
   ref: 'Merchant',

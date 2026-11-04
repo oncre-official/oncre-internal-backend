@@ -19,7 +19,9 @@ import { User } from '../user/model/user.model';
 
 import { AssignCaseDto, BulkUploadDto, CreateCaseDto } from './dto/case.dto';
 import { QueryCaseDto } from './dto/query.dto';
+import { RECOVERY_ENGINES } from './helper/const';
 import { Case, CaseDocument } from './model/case.model';
+import { RecoverySchedule } from './model/index.model';
 import { CaseRepository } from './repository/case.repository';
 import {
   CaseSource,
@@ -27,6 +29,7 @@ import {
   CaseUploadResult,
   ExcelCaseRow,
   RecoveryClassification,
+  RecoveryScheduleStatus,
 } from './types/index.interface';
 
 interface UploadContext {
@@ -135,12 +138,14 @@ export class CaseService {
     if (caseExist) throw new BadRequestException('A recovery case already active for debtor and merchant');
 
     const caseId = await this.generateCaseId(merchant);
+    const schedule = this.buildRecoverySchedule(payload.classification);
 
     const casePayload = {
       ...payload,
       caseId: caseId,
       merchantId: merchant?._id,
       customerId: customer?._id,
+      schedule,
       debtAge: this.calculateDebtAge(dueDate),
     };
 
@@ -375,6 +380,8 @@ export class CaseService {
         ? RecoveryClassification.FINANCIAL_INSTITUTION
         : RecoveryClassification.MERCHANT;
 
+    const schedule = this.buildRecoverySchedule(newClassification);
+
     const data = await this.cases.create({
       ...payload,
       caseId,
@@ -383,6 +390,7 @@ export class CaseService {
       customerId: customer?._id,
       debtAge: this.calculateDebtAge(dueDate),
       source,
+      schedule,
     });
 
     void this.sendSms(merchant, customer, data).catch((error) => {
@@ -411,6 +419,24 @@ export class CaseService {
       merchantName: this.sanitizeExcelValue(row.merchantName),
       merchantPhone: this.normalizePhone(row.merchantPhone),
       dueDate: this.sanitizeExcelDate(row.dueDate),
+    };
+  }
+
+  private buildRecoverySchedule(classification: RecoveryClassification): RecoverySchedule {
+    const engine =
+      classification === RecoveryClassification.MERCHANT
+        ? RecoveryClassification.MERCHANT
+        : RecoveryClassification.FINANCIAL_INSTITUTION;
+
+    return {
+      engine,
+      duration: RECOVERY_ENGINES[engine].duration ?? 0,
+      status: RecoveryScheduleStatus.PENDING,
+      completed: false,
+      attempts: 0,
+      scheduledAt: new Date(),
+      call: { scheduled: false, total: 0 },
+      messaging: { scheduled: false, total: 0 },
     };
   }
 

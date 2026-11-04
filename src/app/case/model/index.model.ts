@@ -1,7 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
-import { ICaseAssetDetails, ICaseFlags } from '../types/index.interface';
+import {
+  ICaseAssetDetails,
+  ICaseFlags,
+  RecoveryClassification,
+  RecoveryScheduleStatus,
+} from '../types/index.interface';
 
 @Schema({ _id: false, versionKey: false })
 export class CaseFlags implements ICaseFlags {
@@ -59,3 +64,75 @@ export class CaseTags {
 }
 
 export const CaseTagsSchema = SchemaFactory.createForClass(CaseTags);
+
+@Schema({ _id: false, versionKey: false })
+export class RecoveryScheduleChannel {
+  @ApiPropertyOptional()
+  @Prop({ type: Boolean, default: false })
+  scheduled: boolean;
+
+  @ApiPropertyOptional()
+  @Prop({ type: Date })
+  scheduledAt?: Date;
+
+  @ApiPropertyOptional()
+  @Prop({ type: Number, default: 0 })
+  total: number;
+}
+
+@Schema({ _id: false, versionKey: false })
+export class RecoverySchedule {
+  @ApiPropertyOptional()
+  @Prop({ type: Number })
+  duration: number;
+
+  @ApiPropertyOptional()
+  @Prop({ type: String, enum: RecoveryClassification })
+  engine: RecoveryClassification;
+
+  @ApiPropertyOptional({ enum: RecoveryScheduleStatus })
+  @Prop({ type: String, enum: RecoveryScheduleStatus, default: RecoveryScheduleStatus.PENDING })
+  status: RecoveryScheduleStatus;
+
+  @ApiPropertyOptional({ type: () => RecoveryScheduleChannel })
+  @Prop({ type: RecoveryScheduleChannel, default: () => ({}) })
+  call: RecoveryScheduleChannel;
+
+  @ApiPropertyOptional({ type: () => RecoveryScheduleChannel })
+  @Prop({ type: RecoveryScheduleChannel, default: () => ({}) })
+  messaging: RecoveryScheduleChannel;
+
+  @ApiPropertyOptional()
+  @Prop({ type: Boolean, default: false })
+  completed: boolean;
+
+  @ApiPropertyOptional()
+  @Prop({ type: Number, default: 0 })
+  attempts: number;
+
+  @ApiPropertyOptional()
+  @Prop({ type: Date })
+  lastAttemptAt?: Date;
+
+  @ApiPropertyOptional()
+  @Prop({ type: Date })
+  scheduledAt?: Date;
+
+  @ApiPropertyOptional()
+  @Prop({ type: Date })
+  completedAt?: Date;
+
+  @ApiPropertyOptional()
+  @Prop({ type: Date })
+  lockedAt?: Date;
+
+  @ApiPropertyOptional()
+  @Prop({ type: Date })
+  lockUntil?: Date;
+
+  @ApiPropertyOptional()
+  @Prop({ type: String })
+  lastError?: string;
+}
+
+export const RecoveryScheduleSchema = SchemaFactory.createForClass(RecoverySchedule);

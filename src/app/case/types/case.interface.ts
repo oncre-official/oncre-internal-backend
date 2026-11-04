@@ -8,6 +8,7 @@ import {
   CaseStatus,
   ICaseAssetDetails,
   ICaseFlags,
+  ICaseRecoverySchedule,
   NigerianZone,
   RecoveryClassification,
   RecoveryMode,
@@ -19,6 +20,7 @@ export interface ICase extends IBaseType {
   customerId: ObjectId;
 
   classification: RecoveryClassification;
+  schedule: ICaseRecoverySchedule;
   zone: NigerianZone;
 
   outstandingBalance: number;
