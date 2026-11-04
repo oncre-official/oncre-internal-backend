@@ -1,12 +1,9 @@
 export enum CallScheduleStatus {
-  PENDING = 'pending',
-  QUEUED = 'queued',
-  IN_PROGRESS = 'in_progress',
-  COMPLETED = 'completed',
-  MISSED = 'missed',
-  FAILED = 'failed',
-  CANCELLED = 'cancelled',
-  RESCHEDULED = 'rescheduled',
+  PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
+  AVAILABLE = 'AVAILABLE',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
 }
 
 export enum CallOutcome {}

@@ -51,11 +51,11 @@ export interface OTPVerificationResponse {
   msisdn: string;
 }
 
-export interface SMSResult {
+export interface SMSResultResponse<T = unknown> {
   success: boolean;
   message_id: string | null;
   error: string | null;
-  raw_response?: any;
+  raw_response?: T;
 }
 
 export interface TermiiSendResponse {

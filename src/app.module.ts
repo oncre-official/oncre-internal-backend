@@ -10,6 +10,7 @@ import { CaseModule } from './app/case/case.module';
 import { CronModule } from './app/cron/cron.module';
 import { CustomerModule } from './app/customer/customer.module';
 import { LogModule } from './app/log/log.module';
+import { MessageModule } from './app/message/message.module';
 import { RoleModule } from './app/role/role.module';
 import { SharedModule } from './app/shared/shared.module';
 import { StaffModule } from './app/staff/staff.module';
@@ -29,6 +30,7 @@ import { HttpExceptionFilter } from './handlers/exceptions/http-exception.filter
     AdminModule,
     CaseModule,
     CallModule,
+    MessageModule,
     StaffModule,
     CustomerModule,
     CronModule,

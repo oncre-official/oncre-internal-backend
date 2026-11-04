@@ -6,12 +6,14 @@ import { CallScheduleStatus } from '@on/app/call/types/index.interface';
 import { IRecoveryEngineConfig, RECOVERY_ENGINES } from '@on/app/case/helper/const';
 import { CaseRepository } from '@on/app/case/repository/case.repository';
 import { CaseStatus, RecoveryClassification, RecoveryScheduleStatus } from '@on/app/case/types/index.interface';
+import { MessageRepository } from '@on/app/message/repository/message.repository';
+import { MessageScheduleStatus } from '@on/app/message/types/index.interface';
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 @Injectable()
-export class CallSchedulerService {
-  private readonly logger = new Logger(CallSchedulerService.name);
+export class SchedulerService {
+  private readonly logger = new Logger(SchedulerService.name);
 
   private readonly BATCH_SIZE = 200;
   private readonly MAX_BATCHES = 20;
@@ -20,9 +22,10 @@ export class CallSchedulerService {
   constructor(
     private readonly cases: CaseRepository,
     private readonly call: CallRepository,
+    private readonly message: MessageRepository,
   ) {}
 
-  @Cron('*/10 * * * *', { name: 'call-scheduler', timeZone: 'Africa/Lagos' })
+  @Cron('*/10 * * * *', { name: 'scheduler', timeZone: 'Africa/Lagos' })
   async processCallSchedules(): Promise<void> {
     this.logger.log('Starting recovery call scheduling');
 
@@ -53,20 +56,24 @@ export class CallSchedulerService {
 
         for (const recoveryCase of cases) {
           try {
-            const scheduled = await this.scheduleCaseCalls(recoveryCase);
+            const scheduled = await this.scheduleCase(recoveryCase);
             if (scheduled) processed++;
           } catch (error: any) {
             failed++;
-            this.logger.error(`Failed to schedule calls for ${recoveryCase.caseId}: ${error.message}`, error.stack);
+
+            this.logger.error(
+              `Failed to generate schedules for case ${recoveryCase.caseId}: ${error.message}`,
+              error.stack,
+            );
           }
         }
 
         if (cases.length < this.BATCH_SIZE) break;
       }
 
-      this.logger.log(`Call scheduling completed. Processed: ${processed}, Failed: ${failed}`);
+      this.logger.log(`Recovery schedule generation completed. Processed: ${processed}, Failed: ${failed}`);
     } catch (error: any) {
-      this.logger.error(`Call scheduling cron failed: ${error.message}`, error.stack);
+      this.logger.error(`Recovery schedule generation cron failed: ${error.message}`, error.stack);
     }
   }
 
@@ -84,7 +91,7 @@ export class CallSchedulerService {
         {
           $or: [
             { 'schedule.call.scheduled': { $ne: true } },
-            { 'schedule.call': { $exists: false } },
+            { 'schedule.messaging.scheduled': { $ne: true } },
             { schedule: { $exists: false } },
           ],
         },
@@ -99,7 +106,7 @@ export class CallSchedulerService {
     };
   }
 
-  private async scheduleCaseCalls(recoveryCase: any): Promise<boolean> {
+  private async scheduleCase(recoveryCase: any): Promise<boolean> {
     const config = this.getRecoveryConfig(recoveryCase.classification);
 
     if (!config) {
@@ -119,7 +126,7 @@ export class CallSchedulerService {
           {
             $or: [
               { 'schedule.call.scheduled': { $ne: true } },
-              { 'schedule.call': { $exists: false } },
+              { 'schedule.messaging.scheduled': { $ne: true } },
               { schedule: { $exists: false } },
             ],
           },
@@ -137,8 +144,6 @@ export class CallSchedulerService {
           'schedule.engine': recoveryCase.classification,
           'schedule.duration': config.duration,
           'schedule.status': RecoveryScheduleStatus.PROCESSING,
-          'schedule.call.scheduled': false,
-          'schedule.call.total': recoveryCase.schedule?.call?.total ?? 0,
           'schedule.lockedAt': now,
           'schedule.lockUntil': lockUntil,
         },
@@ -151,18 +156,28 @@ export class CallSchedulerService {
     try {
       const baseDate = claimedCase.activatedAt ?? claimedCase.createdAt ?? new Date(Date.now() - SEVEN_DAYS_MS);
 
-      await this.createCallSchedules(claimedCase, config, baseDate);
+      if (claimedCase.schedule?.call?.scheduled !== true) await this.createCallSchedules(claimedCase, config, baseDate);
+      if (claimedCase.schedule?.messaging?.scheduled !== true)
+        await this.createMessageSchedules(claimedCase, config, baseDate);
 
-      const total = await this.call.count({ caseId: claimedCase._id });
+      const [callTotal, messageTotal] = await Promise.all([
+        this.call.count({ caseId: claimedCase._id }),
+        this.message.count({ caseId: claimedCase._id }),
+      ]);
+
       const updated = await this.cases.findOneAndUpdate(
         { _id: claimedCase._id, 'schedule.lockUntil': lockUntil },
         {
           $set: {
             'schedule.call.scheduled': true,
             'schedule.call.scheduledAt': new Date(),
-            'schedule.call.total': total,
-            'schedule.lastAttemptAt': new Date(),
+            'schedule.call.total': callTotal,
 
+            'schedule.messaging.scheduled': true,
+            'schedule.messaging.scheduledAt': new Date(),
+            'schedule.messaging.total': messageTotal,
+
+            'schedule.lastAttemptAt': new Date(),
             'schedule.status': RecoveryScheduleStatus.PARTIALLY_SCHEDULED,
           },
           $unset: {
@@ -175,7 +190,9 @@ export class CallSchedulerService {
 
       if (!updated) throw new BadRequestException('Could not finalize case call scheduling');
 
-      this.logger.log(`Successfully scheduled ${total} calls for ${claimedCase.caseId}`);
+      this.logger.log(
+        `Successfully scheduled ${callTotal} calls and ${messageTotal} messages for ${claimedCase.caseId}`,
+      );
 
       return true;
     } catch (error: any) {
@@ -222,11 +239,44 @@ export class CallSchedulerService {
     );
   }
 
+  private async createMessageSchedules(
+    recoveryCase: any,
+    config: IRecoveryEngineConfig,
+    baseDate: Date,
+  ): Promise<void> {
+    const days = [...new Set(config.messages ?? [])];
+
+    await Promise.all(
+      days.map((day) => {
+        const scheduledFor = this.getScheduledDate(baseDate, day);
+
+        return this.message.findOneAndCreate(
+          { caseId: recoveryCase._id, day },
+          {
+            caseId: recoveryCase._id,
+            merchantId: recoveryCase.merchantId,
+            customerId: recoveryCase.customerId,
+            day,
+            scheduledAt: new Date(),
+            scheduledFor,
+            status: MessageScheduleStatus.PENDING,
+            attempts: 0,
+            meta: {
+              classification: recoveryCase.classification,
+            },
+          },
+        );
+      }),
+    );
+  }
+
   private getScheduledDate(baseDate: Date, day: number): Date {
-    const scheduledFor = new Date(baseDate);
+    if (day <= 1) return new Date(baseDate);
+
+    const scheduledFor = new Date(baseDate.getTime() + 60 * 60 * 1000);
 
     scheduledFor.setUTCDate(scheduledFor.getUTCDate() + day - 1);
-    scheduledFor.setUTCHours(8, 0, 0, 0);
+    scheduledFor.setUTCHours(7, 0, 0, 0);
 
     return scheduledFor;
   }

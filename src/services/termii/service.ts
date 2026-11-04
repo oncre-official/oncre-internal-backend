@@ -11,7 +11,7 @@ import {
   IPinVerification,
   MessageResponse,
   OTPResponse,
-  SMSResult,
+  SMSResultResponse,
   TermiiError,
   TermiiSendResponse,
 } from './type';
@@ -42,7 +42,7 @@ export class TermiiService {
     phoneNumber: string,
     messageBody: string,
     options?: { senderId?: string; channel?: string },
-  ): Promise<SMSResult> {
+  ): Promise<SMSResultResponse> {
     const to = toInternationalPhone(phoneNumber);
     if (!this.apiKey) throw new BadRequestException('Termii API key not configured');
 

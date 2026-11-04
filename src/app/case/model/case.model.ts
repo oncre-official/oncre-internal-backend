@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ApiHideProperty, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ObjectId } from 'mongodb';
 import { Document, HydratedDocument, Schema as MongooseSchema } from 'mongoose';
+import { Types } from 'mongoose';
 
 import { Customer } from '@on/app/customer/model/customer.model';
 import { Merchant } from '@on/app/merchant/model/merchant.model';
@@ -31,11 +32,11 @@ export class Case extends Document implements ICase {
   caseId: string;
 
   @ApiProperty({ description: 'Merchant ID or recovery client ID' })
-  @Prop({ type: String, required: true })
+  @Prop({ type: Types.ObjectId, ref: 'Merchant', required: true })
   merchantId: ObjectId;
 
   @ApiProperty({ description: 'Customer ID', required: false })
-  @Prop({ type: String, required: true })
+  @Prop({ type: Types.ObjectId, ref: 'Customer', required: true })
   customerId: ObjectId;
 
   @ApiProperty({ enum: RecoveryClassification })
