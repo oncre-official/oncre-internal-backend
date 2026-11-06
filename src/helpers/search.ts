@@ -12,6 +12,7 @@ export interface IJoinSearchQuery {
   search?: string;
   fields?: string[];
   query?: Record<string, any>;
+  queryAfterJoins?: Record<string, any>;
   joins?: IJoinSearchConfig[];
 }
 
@@ -26,7 +27,7 @@ export const searchQuery = (fields: string[], searchParam: string, query?: Recor
 };
 
 export const joinSearchQuery = (searchQuery: IJoinSearchQuery) => {
-  const { search, fields = [], query = {}, joins = [] } = searchQuery;
+  const { search, fields = [], query = {}, queryAfterJoins = {}, joins = [] } = searchQuery;
   delete query?.search;
 
   const pipeline: any[] = [];
@@ -39,6 +40,8 @@ export const joinSearchQuery = (searchQuery: IJoinSearchQuery) => {
     pipeline.push({ $lookup: { from, localField, foreignField, as } });
     if (join.unwind !== false) pipeline.push({ $unwind: { path: `$${as}`, preserveNullAndEmptyArrays: true } });
   }
+
+  if (Object.keys(queryAfterJoins).length) pipeline.push({ $match: queryAfterJoins });
 
   if (search) {
     const orConditions: any[] = [];

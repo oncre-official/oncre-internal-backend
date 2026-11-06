@@ -1,8 +1,7 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 
 import { CallRepository } from '@on/app/call/repository/call.repository';
-import { CallScheduleStatus } from '@on/app/call/types/index.interface';
 import { MessageRepository } from '@on/app/message/repository/message.repository';
 import { MessageScheduleStatus } from '@on/app/message/types/index.interface';
 
@@ -144,82 +143,5 @@ export class ProcessorService {
         $unset: { lockedAt: 1, lockUntil: 1 },
       },
     );
-  }
-
-  private async processDueCalls(): Promise<void> {
-    let processed = 0;
-    let failed = 0;
-
-    for (let batch = 0; batch < MAX_BATCHES; batch++) {
-      const now = new Date();
-
-      const pendingCalls: any[] = await this.call.aggregate([
-        {
-          $match: {
-            status: CallScheduleStatus.PENDING,
-            scheduledFor: { $lte: now },
-            $or: [{ lockUntil: { $exists: false } }, { lockUntil: null }, { lockUntil: { $lte: now } }],
-          },
-        },
-        { $sort: { scheduledFor: 1, createdAt: 1 } },
-        { $limit: BATCH_SIZE },
-      ]);
-
-      if (!pendingCalls.length) break;
-
-      for (const call of pendingCalls) {
-        try {
-          const success = await this.processCall(call);
-          if (success) processed++;
-        } catch (error: any) {
-          failed++;
-          this.logger.error(`Call processing failed for ${call._id}: ${error.message}`, error.stack);
-        }
-      }
-
-      if (pendingCalls.length < BATCH_SIZE) break;
-    }
-
-    this.logger.log(`Call processing completed. Made available: ${processed}, Failed: ${failed}`);
-  }
-
-  private async processCall(call: any): Promise<boolean> {
-    const now = new Date();
-    const lockUntil = new Date(now.getTime() + LOCK_MINUTES * 60 * 1000);
-
-    const claimed: any = await this.call.findOneAndUpdate(
-      {
-        _id: call._id,
-        status: CallScheduleStatus.PENDING,
-        scheduledFor: { $lte: now },
-        $or: [{ lockUntil: { $exists: false } }, { lockUntil: null }, { lockUntil: { $lte: now } }],
-      },
-      { $set: { status: CallScheduleStatus.PROCESSING, lockedAt: now, lockUntil }, $inc: { attempts: 1 } },
-    );
-    if (!claimed) return false;
-
-    try {
-      const updated = await this.call.findOneAndUpdate(
-        { _id: claimed._id, status: CallScheduleStatus.PROCESSING, lockUntil },
-        {
-          $set: { status: CallScheduleStatus.AVAILABLE },
-          $unset: { lockedAt: 1, lockUntil: 1, lastError: 1 },
-        },
-      );
-
-      if (!updated) throw new BadRequestException('Could not release call to agent workflow');
-
-      return true;
-    } catch (error: any) {
-      await this.call.findOneAndUpdate(
-        { _id: claimed._id, status: CallScheduleStatus.PROCESSING, lockUntil },
-        {
-          $set: { status: CallScheduleStatus.FAILED, lastError: error.message },
-          $unset: { lockedAt: 1, lockUntil: 1 },
-        },
-      );
-
-      throw error;
-    }
   }
 }

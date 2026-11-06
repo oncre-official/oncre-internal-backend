@@ -8,6 +8,8 @@ import { CaseRepository } from '@on/app/case/repository/case.repository';
 import { CaseStatus, RecoveryClassification, RecoveryScheduleStatus } from '@on/app/case/types/index.interface';
 import { MessageRepository } from '@on/app/message/repository/message.repository';
 import { MessageScheduleStatus } from '@on/app/message/types/index.interface';
+import { TaskRepository } from '@on/app/task/repository/task.repository';
+import { StaffTaskStatus } from '@on/app/task/types/index.interface';
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -20,8 +22,9 @@ export class SchedulerService {
   private readonly LOCK_MINUTES = 15;
 
   constructor(
-    private readonly cases: CaseRepository,
     private readonly call: CallRepository,
+    private readonly task: TaskRepository,
+    private readonly cases: CaseRepository,
     private readonly message: MessageRepository,
   ) {}
 
@@ -92,6 +95,7 @@ export class SchedulerService {
           $or: [
             { 'schedule.call.scheduled': { $ne: true } },
             { 'schedule.messaging.scheduled': { $ne: true } },
+            { 'schedule.task.scheduled': { $ne: true } },
             { schedule: { $exists: false } },
           ],
         },
@@ -127,6 +131,7 @@ export class SchedulerService {
             $or: [
               { 'schedule.call.scheduled': { $ne: true } },
               { 'schedule.messaging.scheduled': { $ne: true } },
+              { 'schedule.task.scheduled': { $ne: true } },
               { schedule: { $exists: false } },
             ],
           },
@@ -157,12 +162,17 @@ export class SchedulerService {
       const baseDate = claimedCase.activatedAt ?? claimedCase.createdAt ?? new Date(Date.now() - SEVEN_DAYS_MS);
 
       if (claimedCase.schedule?.call?.scheduled !== true) await this.createCallSchedules(claimedCase, config, baseDate);
+
       if (claimedCase.schedule?.messaging?.scheduled !== true)
         await this.createMessageSchedules(claimedCase, config, baseDate);
 
-      const [callTotal, messageTotal] = await Promise.all([
+      if (claimedCase.schedule?.task?.scheduled !== true)
+        await this.createStaffTaskSchedules(claimedCase, config, baseDate);
+
+      const [callTotal, messageTotal, taskTotal] = await Promise.all([
         this.call.count({ caseId: claimedCase._id }),
         this.message.count({ caseId: claimedCase._id }),
+        this.task.count({ caseId: claimedCase._id }),
       ]);
 
       const updated = await this.cases.findOneAndUpdate(
@@ -176,6 +186,10 @@ export class SchedulerService {
             'schedule.messaging.scheduled': true,
             'schedule.messaging.scheduledAt': new Date(),
             'schedule.messaging.total': messageTotal,
+
+            'schedule.task.scheduled': true,
+            'schedule.task.scheduledAt': new Date(),
+            'schedule.task.total': taskTotal,
 
             'schedule.lastAttemptAt': new Date(),
             'schedule.status': RecoveryScheduleStatus.PARTIALLY_SCHEDULED,
@@ -263,6 +277,44 @@ export class SchedulerService {
             attempts: 0,
             meta: {
               classification: recoveryCase.classification,
+            },
+          },
+        );
+      }),
+    );
+  }
+
+  private async createStaffTaskSchedules(
+    recoveryCase: any,
+    config: IRecoveryEngineConfig,
+    baseDate: Date,
+  ): Promise<void> {
+    const tasks = config.tasks ?? [];
+
+    await Promise.all(
+      tasks.map((task) => {
+        const scheduledFor = this.getScheduledDate(baseDate, task.day);
+
+        return this.task.findOneAndCreate(
+          { caseId: recoveryCase._id, day: task.day },
+          {
+            caseId: recoveryCase._id,
+            merchantId: recoveryCase.merchantId,
+            customerId: recoveryCase.customerId,
+            assignedTo: recoveryCase.agentId ?? undefined,
+            supervisorId: recoveryCase.supervisorId ?? undefined,
+            title: task.title,
+            description: task.description,
+            priority: task.priority,
+            day: task.day,
+            scheduledAt: new Date(),
+            scheduledFor,
+            status: StaffTaskStatus.PENDING,
+            attempts: 0,
+            meta: {
+              classification: recoveryCase.classification,
+              caseReference: recoveryCase.caseId,
+              activityType: 'RECOVERY_FOLLOW_UP',
             },
           },
         );

@@ -58,7 +58,9 @@ export class CallController {
     try {
       const { skip, limit } = query;
 
-      const filter = requestFilter(query, { convertToRegex: false });
+      const filter = requestFilter(query, { dateField: 'scheduledFor', convertToRegex: false });
+
+      console.log(filter);
 
       const response = await this.callService.queue(filter, skip, limit);
 

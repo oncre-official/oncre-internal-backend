@@ -102,6 +102,10 @@ export class RecoverySchedule {
   @Prop({ type: RecoveryScheduleChannel, default: () => ({}) })
   messaging: RecoveryScheduleChannel;
 
+  @ApiPropertyOptional({ type: () => RecoveryScheduleChannel })
+  @Prop({ type: RecoveryScheduleChannel, default: () => ({}) })
+  task: RecoveryScheduleChannel;
+
   @ApiPropertyOptional()
   @Prop({ type: Boolean, default: false })
   completed: boolean;

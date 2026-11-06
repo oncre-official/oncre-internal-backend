@@ -437,6 +437,7 @@ export class CaseService {
       scheduledAt: new Date(),
       call: { scheduled: false, total: 0 },
       messaging: { scheduled: false, total: 0 },
+      task: { scheduled: false, total: 0 },
     };
   }
 

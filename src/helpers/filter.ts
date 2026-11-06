@@ -31,12 +31,13 @@ export function requestFilter(data: Record<string, any>, options: RequestFilterO
   });
 
   if (startDate || endDate) {
-    filter.createdAt = {};
-
     const { start, end } = calculateStartAndEndOfDay(startDate, endDate);
 
-    if (startDate) filter[dateField].$gte = start;
-    if (endDate) filter[dateField].$lte = end;
+    filter[dateField] = {
+      ...(filter[dateField] || {}),
+      ...(startDate ? { $gte: start } : {}),
+      ...(endDate ? { $lte: end } : {}),
+    };
   }
 
   if (!convertToRegex) return filter;

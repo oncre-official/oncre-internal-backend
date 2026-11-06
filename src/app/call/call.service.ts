@@ -36,14 +36,16 @@ export class CallService {
     return { data, message: 'calls successfully fetched' };
   }
 
-  async queue(query: QueryCallDto, skip: number = 0, limit: number = 20): Promise<ServiceResponse<any>> {
-    const { search } = query;
+  async queue(query: Record<string, any>, skip: number = 0, limit: number = 20): Promise<ServiceResponse<any>> {
+    const { search, scheduledFor } = query;
 
     const now = new Date();
 
     const caseFilter = {
-      // 'case.status': 'ACTIVE',
-      scheduledFor: { $lte: now },
+      scheduledFor: {
+        ...(scheduledFor || {}),
+        $lte: scheduledFor?.$lte && scheduledFor.$lte < now ? scheduledFor.$lte : now,
+      },
       status: { $ne: CallScheduleStatus.COMPLETED },
     };
 
@@ -52,21 +54,38 @@ export class CallService {
     if (search) {
       pipeline = joinSearchQuery({
         search,
-        fields: [],
+        fields: ['note'],
         query,
-        joins: [{ from: 'cases', localField: 'caseId', foreignField: '_id', as: 'case' }],
+        joins: [
+          {
+            from: 'cases',
+            localField: 'caseId',
+            foreignField: '_id',
+            as: 'case',
+            searchFields: ['product', 'description'],
+          },
+          {
+            from: 'customers',
+            localField: 'customerId',
+            foreignField: '_id',
+            as: 'customer',
+            searchFields: ['name', 'phone', 'address'],
+          },
+        ],
       });
     } else {
       pipeline = [
         { $lookup: { from: 'cases', localField: 'caseId', foreignField: '_id', as: 'case' } },
         { $unwind: '$case' },
+        { $lookup: { from: 'customers', localField: 'customerId', foreignField: '_id', as: 'customer' } },
+        { $unwind: '$customer' },
       ];
     }
 
-    pipeline.push({ $match: caseFilter });
+    if (search) pipeline.push({ $unwind: '$customer' });
+    pipeline.push({ $match: { ...caseFilter, ...query } });
 
     const data = await this.call.aggregateAndCount(pipeline, {
-      populate: [{ path: 'customer' }],
       aggregate: { skip, limit },
     });
 

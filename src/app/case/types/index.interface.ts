@@ -125,6 +125,11 @@ export interface ICaseRecoverySchedule {
     scheduledAt?: Date;
     total: number;
   };
+  task: {
+    scheduled: boolean;
+    scheduledAt?: Date;
+    total: number;
+  };
   completed: boolean;
   attempts: number;
   lastAttemptAt?: Date;

@@ -27,6 +27,10 @@ export class MessageHelperService {
     return await this.termii.sendSMS(customer.phone, content);
   }
 
+  /**
+   * PRIVATE METHODS
+   */
+
   private buildRecoveryMessage(recoveryCase: any, customer: any, day?: number): string {
     console.log(day, 'day');
 

@@ -14,6 +14,7 @@ import { MessageModule } from './app/message/message.module';
 import { RoleModule } from './app/role/role.module';
 import { SharedModule } from './app/shared/shared.module';
 import { StaffModule } from './app/staff/staff.module';
+import { TaskModule } from './app/task/task.module';
 import { UserModule } from './app/user/user.module';
 import { AppController } from './app.controller';
 import { config } from './config';
@@ -34,6 +35,7 @@ import { HttpExceptionFilter } from './handlers/exceptions/http-exception.filter
     StaffModule,
     CustomerModule,
     CronModule,
+    TaskModule,
     ScheduleModule.forRoot(),
   ],
   controllers: [AppController],

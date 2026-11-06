@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 
 import { TermiiService } from '@on/services/termii/service';
 
+import { CaseModule } from '../case/case.module';
 import { LogModule } from '../log/log.module';
 import { RoleModule } from '../role/role.module';
 import { SharedModule } from '../shared/shared.module';
@@ -20,6 +21,7 @@ import { CallRepository } from './repository/call.repository';
     LogModule,
     RoleModule,
     SharedModule,
+    CaseModule,
   ],
   controllers: [CallController],
   providers: [CallRepository, CallService, TermiiService, CallRepository],
