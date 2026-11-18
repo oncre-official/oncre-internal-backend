@@ -5,6 +5,11 @@ import { config } from '@on/config';
 
 import { IQoreIdNinVerificationPayload } from './type';
 
+/** Shows only the last four digits, so logs never hold a full ID number. */
+function maskIdNumber(idNumber: string): string {
+  return `${'*'.repeat(Math.max(idNumber.length - 4, 0))}${idNumber.slice(-4)}`;
+}
+
 @Injectable()
 export class QoreIdService {
   private readonly logger = new Logger(QoreIdService.name);
@@ -52,7 +57,7 @@ export class QoreIdService {
       const message = error?.response?.data?.message ?? 'Unable to verify NIN at this time';
 
       this.logger.error(
-        `QoreID NIN verification failed for NIN: ${idNumber}`,
+        `QoreID NIN verification failed for NIN: ${maskIdNumber(idNumber)}`,
         error instanceof Error ? error.stack : String(error),
       );
 

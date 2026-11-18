@@ -21,7 +21,7 @@ import type { Response, Request } from 'express';
 
 @ApiTags('Customer')
 @ApiUnprocessableEntityResponse({ description: 'Error occurred', type: ApiResponseDTO })
-@Controller('api/v1/customers')
+@Controller('customers')
 export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}
 

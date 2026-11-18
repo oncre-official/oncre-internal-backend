@@ -21,7 +21,7 @@ import type { Response, Request } from 'express';
 
 @ApiTags('Merchant')
 @ApiUnprocessableEntityResponse({ description: 'Error occurred', type: ApiResponseDTO })
-@Controller('api/v1/merchants')
+@Controller('merchants')
 export class MerchantController {
   constructor(private readonly merchantService: MerchantService) {}
 

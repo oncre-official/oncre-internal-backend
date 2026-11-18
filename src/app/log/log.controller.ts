@@ -18,7 +18,7 @@ import type { Response, Request } from 'express';
 
 @ApiTags('Log')
 @ApiUnprocessableEntityResponse({ description: 'Error occurred', type: ApiResponseDTO })
-@Controller('api/v1/logs')
+@Controller('logs')
 export class LogController {
   constructor(private readonly logService: LogService) {}
 

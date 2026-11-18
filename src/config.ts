@@ -65,4 +65,12 @@ export const config = {
     clientId: process.env.QOREID_CLIENT_ID,
     secretKey: process.env.QOREID_SECRET_KEY,
   },
+  kyc: {
+    hashSecret: process.env.KYC_HASH_SECRET,
+  },
+  /** Default provider per service. Switch by changing the env value; the adapter must be registered. */
+  providers: {
+    sms: process.env.SMS_PROVIDER || 'termii',
+    kyc: process.env.KYC_PROVIDER || 'qoreid',
+  },
 };

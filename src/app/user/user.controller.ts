@@ -20,7 +20,7 @@ import type { Response, Request } from 'express';
   description: 'Error occurred',
   type: ApiResponseDTO,
 })
-@Controller('api/v1/users')
+@Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
