@@ -35,13 +35,6 @@ export class VerifyNinDto {
   lastName: string;
 }
 
-export class VerifyKybDto {
-  @ApiProperty({ description: 'CAC registration number (RC, BN or IT)', example: 'RC123456' })
-  @IsString()
-  @Matches(/^\s*(RC|BN|IT)?[\s-]*\d{4,10}\s*$/i, { message: 'regNumber must be a valid CAC registration number' })
-  regNumber: string;
-}
-
 export class MerchantLoginDto {
   @ApiProperty({ description: 'Phone number the merchant signed up with', example: '08012345678' })
   @IsString()

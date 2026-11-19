@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { KycModule } from '@on/services/kyc/module';
@@ -10,6 +10,7 @@ import { SharedModule } from '../shared/shared.module';
 import { UserModule } from '../user/user.module';
 
 import { OnboardingGuard } from './guard/onboarding.guard';
+import { InstitutionKybService } from './institution-kyb.service';
 import { MerchantKyc, MerchantKycSchema } from './model/merchant-kyc.model';
 import { MerchantOnboarding, MerchantOnboardingSchema } from './model/merchant-onboarding.model';
 import { MerchantKycController, MerchantSignupController } from './onboarding.controller';
@@ -27,7 +28,7 @@ import { MerchantSessionService } from './session.service';
     ]),
     UserModule,
     RoleModule,
-    MerchantModule,
+    forwardRef(() => MerchantModule),
     SharedModule,
     SmsModule,
     KycModule,
@@ -40,7 +41,8 @@ import { MerchantSessionService } from './session.service';
     MerchantOnboardingRepository,
     MerchantKycRepository,
     OnboardingGuard,
+    InstitutionKybService,
   ],
-  exports: [OnboardingService, OtpService, MerchantSessionService],
+  exports: [OnboardingService, OtpService, MerchantSessionService, InstitutionKybService],
 })
 export class OnboardingModule {}

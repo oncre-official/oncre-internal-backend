@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { UserStatus } from '@on/enum';
 import { formatPhoneWithCode, parsePhone } from '@on/helpers/phone';
@@ -9,6 +9,7 @@ import { ServiceResponse } from '@on/utils/types';
 
 import { LogService } from '../log/log.service';
 import { AuditAction, AuditModule } from '../log/type/audit-log.interface';
+import { InstitutionKybService } from '../onboarding/institution-kyb.service';
 import { RoleRepository } from '../role/repository/role.repository';
 import { SharedService } from '../shared/shared.service';
 import { User } from '../user/model/user.model';
@@ -17,7 +18,7 @@ import { UserRepository } from '../user/repository/user.repository';
 import { CreateMerchantDto } from './dto/merchant.dto';
 import { Merchant } from './model/merchant.model';
 import { MerchantRepository } from './repository/merchant.repository';
-import { MerchantStatus } from './types/index.interface';
+import { MerchantStatus, MerchantType } from './types/index.interface';
 
 const APPROVAL_REQUIRED_CHANNELS = ['sales', 'field-agent'];
 
@@ -29,6 +30,8 @@ export class MerchantService {
     private readonly role: RoleRepository,
     private readonly shared: SharedService,
     private readonly merchant: MerchantRepository,
+    @Inject(forwardRef(() => InstitutionKybService))
+    private readonly institutionKyb: InstitutionKybService,
   ) {}
 
   async find(query: QueryDto, skip: number = 0, limit: number = 20): Promise<ServiceResponse<any>> {
@@ -79,6 +82,13 @@ export class MerchantService {
     const merchantExist = await this.merchant.findOne({ $or: [{ name }, { phone }] });
     if (merchantExist) throw new ConflictException('Merchant already exists');
 
+    // Institutions pass KYB (CAC check) before anything is saved; a failure creates nothing.
+    const isInstitution = payload.type === MerchantType.FINANCIAL_INSTITUTION;
+    const kybCheck = isInstitution ? await this.institutionKyb.check(payload.institutionDetails) : undefined;
+    if (kybCheck && !kybCheck.skipped && payload.institutionDetails && !payload.institutionDetails.legalName) {
+      payload.institutionDetails.legalName = kybCheck.business.legalName;
+    }
+
     const userLookup = buildUserLookupQuery(phoneNumber);
     const conditions = [userLookup];
 
@@ -107,6 +117,9 @@ export class MerchantService {
     };
 
     const merchant = await this.merchant.create(merchantPayload);
+
+    // Sign-up is finished for a verified institution: it only has to log in (phone + SMS code).
+    if (kybCheck) await this.institutionKyb.complete(user, merchant, kybCheck);
 
     await this.log.record(creator, {
       action: AuditAction.CREATE,

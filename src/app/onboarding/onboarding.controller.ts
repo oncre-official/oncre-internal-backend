@@ -10,7 +10,6 @@ import {
   MerchantLoginDto,
   MerchantSignupDto,
   VerifyMerchantLoginDto,
-  VerifyKybDto,
   VerifyMerchantPhoneDto,
   VerifyNinDto,
 } from './dto/onboarding.dto';
@@ -138,30 +137,6 @@ export class MerchantKycController {
   ): Promise<ResponseDTO> {
     try {
       const response = await this.onboardingService.verifyNin(user, payload);
-
-      return JsonResponse(res, response);
-    } catch (error) {
-      return ErrorResponse(res, error, req);
-    }
-  }
-
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Verify business (KYB)',
-    description:
-      'Institutions set up by OnCRE only. Checks the CAC registration number with QoreID and finishes sign-up. Needs the onboarding token.',
-  })
-  @ApiOkResponse({ description: 'Business verified, sign-up finished', type: ApiResponseDTO })
-  @UseGuards(OnboardingGuard)
-  @Post('kyb')
-  async verifyKyb(
-    @Body() payload: VerifyKybDto,
-    @User() user: UserDocument,
-    @Res() res: Response,
-    @Req() req: Request,
-  ): Promise<ResponseDTO> {
-    try {
-      const response = await this.onboardingService.verifyKyb(user, payload);
 
       return JsonResponse(res, response);
     } catch (error) {
