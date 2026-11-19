@@ -20,10 +20,7 @@ function cleanName(value: unknown): string | undefined {
   return trimmed ? trimmed.toUpperCase() : undefined;
 }
 
-/**
- * Reads QoreID's NIN answer. Verified only when QoreID completed the check, returned a record,
- * and the first and last name sent matched that record.
- */
+// verified only if the record exists and the first and last names match
 export function parseQoreIdNin(response: any): INinCheckResult {
   const provider = KycProviderName.QOREID;
   const record = response?.nin ?? {};
@@ -56,7 +53,6 @@ export function parseQoreIdNin(response: any): INinCheckResult {
   return { provider, verified: true, name, providerReference };
 }
 
-/** The first field that has a value. QoreID's docs spell some CAC fields more than one way. */
 function pick(record: any, ...keys: string[]): unknown {
   for (const key of keys) {
     const value = record?.[key];
@@ -66,18 +62,14 @@ function pick(record: any, ...keys: string[]): unknown {
   return undefined;
 }
 
-/**
- * Reads QoreID's CAC answer. Verified only when QoreID completed the check, returned a company
- * name, and the company is ACTIVE on the register. Accepts camelCase and snake_case field names,
- * and any letter case in statuses.
- */
+// verified only if the company exists and is ACTIVE on CAC
 export function parseQoreIdCac(response: any, regNumber: string): IBusinessCheckResult {
   const provider = KycProviderName.QOREID;
   const record = response?.cac ?? response?.data?.cac ?? {};
   const providerReference = response?.id !== undefined ? String(response.id) : undefined;
 
   const legalName = cleanName(pick(record, 'companyName', 'company_name', 'name'));
-  // The docs show rcNumber both as a string and as a number.
+  // rcNumber can be a string or a number
   const rawRcNumber = pick(record, 'rcNumber', 'rc_number', 'registrationNumber');
   const registrationNumber =
     cleanName(typeof rawRcNumber === 'number' ? String(rawRcNumber) : rawRcNumber) ?? regNumber;
@@ -122,7 +114,7 @@ export class QoreIdKycAdapter implements IKycProvider {
     const response = await this.qoreId.verifyCac(request.regNumber);
     const result = parseQoreIdCac(response, request.regNumber);
 
-    // Field names only, never values: shows the real reply shape if it differs from the docs.
+    // log only the field names, not the values
     if (!result.verified && result.failureReason === 'Business record not found') {
       this.logger.warn(
         `Unreadable QoreID CAC reply. Top-level fields: [${Object.keys(response ?? {}).join(', ')}], ` +

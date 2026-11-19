@@ -8,7 +8,6 @@ export enum KycType {
   KYB = 'kyb',
 }
 
-/** Which provider checked the record. Comes from the KYC provider list. */
 export { KycProviderName as KycProvider };
 
 export enum KycStatus {
@@ -17,10 +16,8 @@ export enum KycStatus {
   FAILED = 'failed',
 }
 
-/** Official name of a person, from their NIN record. Used for standard merchants. */
 export type IKycVerifiedName = IKycPersonName;
 
-/** Official details of a business, from its registration record. Used for institutions (KYB). */
 export type IKycVerifiedBusiness = IKycBusiness;
 
 export interface IMerchantKyc extends IBaseType {
@@ -30,9 +27,7 @@ export interface IMerchantKyc extends IBaseType {
   provider: KycProviderName;
   idNumberMasked: string;
   idNumberHash: string;
-  /** Set on a verified NIN check. */
   verifiedName?: IKycVerifiedName;
-  /** Set on a verified KYB check. */
   verifiedBusiness?: IKycVerifiedBusiness;
   status: KycStatus;
   providerReference?: string;

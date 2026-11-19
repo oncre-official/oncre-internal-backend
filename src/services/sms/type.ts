@@ -9,7 +9,7 @@ export interface ISmsResult {
   messageId?: string;
 }
 
-/** What every SMS adapter must do. `to` is the full international number, e.g. 2348012345678. */
+// to: 2348012345678
 export interface ISmsProvider extends INamedProvider<SmsProviderName> {
   send(to: string, message: string): Promise<ISmsResult>;
 }

@@ -29,9 +29,7 @@ const MESSAGES: Record<OtpPurpose, (otp: string, minutes: number) => string> = {
 };
 
 /**
- * Everything about phone codes in one place: generating, hashing, sending, checking and the limits
- * (one a minute, five an hour, 30-minute lock after five wrong codes). Sign-up and login both use it,
- * so a change of SMS provider, code length or limits happens here only.
+ * Send and verify phone OTPs for signup and login.
  */
 @Injectable()
 export class OtpService {
@@ -92,7 +90,9 @@ export class OtpService {
     return OTP_TTL_SECONDS;
   }
 
-  /** Checks the code and deletes it, so each code works once. A wrong code counts towards the lock. */
+  /**
+   * Verify the OTP. The code is deleted once used.
+   */
   async consume(user: User, progress: MerchantOnboardingDocument, otp: string): Promise<void> {
     assertNotLocked(progress.otpLockedUntil, 'Too many wrong codes.');
 

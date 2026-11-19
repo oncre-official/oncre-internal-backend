@@ -16,7 +16,6 @@ export const ONBOARDING_TOKEN_TTL_SECONDS = 30 * 60;
 export const ONBOARDING_TOKEN_SCOPE = 'merchant_onboarding';
 export const INVALID_CODE = 'Invalid or expired code.';
 
-/** Any accepted phone format (0801..., 801..., 234801..., +234801...) becomes one stored form. */
 export function parseMerchantPhone(value: string): { countryCode: string; phone: string } {
   const { code, phone } = parsePhone(formatPhoneWithCode(value));
   if (!/^\d{7,12}$/.test(phone)) throw new BadRequestException('Invalid phone number.');
@@ -24,17 +23,14 @@ export function parseMerchantPhone(value: string): { countryCode: string; phone:
   return { countryCode: code, phone };
 }
 
-/** One stored form for a CAC number: upper case, no spaces or dashes, no RC prefix (BN and IT keep theirs). */
+// RC123456 -> 123456
 export function normalizeRegNumber(value: string): string {
   const cleaned = value.toUpperCase().replace(/[\s-]/g, '');
 
   return cleaned.startsWith('RC') ? cleaned.slice(2) : cleaned;
 }
 
-/**
- * True when two company names are the same after ignoring case, punctuation, extra spaces and the
- * company suffix (LTD / LIMITED / PLC).
- */
+// ignores case, punctuation and LTD/LIMITED/PLC
 export function sameBusinessName(a: string, b: string): boolean {
   const clean = (name: string) =>
     name
@@ -47,7 +43,6 @@ export function sameBusinessName(a: string, b: string): boolean {
   return clean(a) === clean(b);
 }
 
-/** Throws 429 while a lock is active, saying how many minutes are left. */
 export function assertNotLocked(lockedUntil: Date | undefined, reason: string): void {
   if (!lockedUntil || lockedUntil <= new Date()) return;
 
@@ -55,10 +50,7 @@ export function assertNotLocked(lockedUntil: Date | undefined, reason: string): 
   throw new HttpException(`${reason} Please try again in ${minutes} minute(s).`, HttpStatus.TOO_MANY_REQUESTS);
 }
 
-/**
- * Derives a key per purpose from KYC_HASH_SECRET. There is deliberately no fallback: if this secret
- * changes, every stored NIN hash stops matching and the one-NIN-one-merchant check silently stops working.
- */
+// NOTE: don't change KYC_HASH_SECRET, the saved NIN hashes depend on it
 function secret(purpose: string): string {
   const base = config.kyc.hashSecret;
   if (!base) throw new Error('KYC_HASH_SECRET must be configured');
@@ -70,7 +62,6 @@ export function generateOtp(): string {
   return String(crypto.randomInt(100000, 1000000));
 }
 
-/** OTPs are stored as a keyed hash, never in plain text. */
 export function hashOtp(otp: string): string {
   return crypto.createHmac('sha256', secret('otp')).update(otp).digest('hex');
 }
@@ -90,7 +81,7 @@ export function safeEqual(a: string, b: string): boolean {
   return left.length === right.length && crypto.timingSafeEqual(left, right);
 }
 
-/** Signs onboarding tokens with a different key from login tokens, so they never pass JwtAuthGuard. */
+// separate secret so onboarding tokens can't be used as login tokens
 export function onboardingTokenSecret(): string {
   return secret('merchant-onboarding-token');
 }

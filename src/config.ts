@@ -67,10 +67,9 @@ export const config = {
   },
   kyc: {
     hashSecret: process.env.KYC_HASH_SECRET,
-    /** Set KYB_VERIFY_CAC=false to skip the CAC check while testing. Always on in production. */
+    // KYB_VERIFY_CAC=false skips the CAC check (not allowed in production)
     verifyCac: isProd || process.env.KYB_VERIFY_CAC !== 'false',
   },
-  /** Default provider per service. Switch by changing the env value; the adapter must be registered. */
   providers: {
     sms: process.env.SMS_PROVIDER || 'termii',
     kyc: process.env.KYC_PROVIDER || 'qoreid',

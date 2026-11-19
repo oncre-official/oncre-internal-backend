@@ -15,10 +15,7 @@ import {
 } from './type';
 
 /**
- * The only way the app checks identities.
- *   kyc.verifyNin(req)              → default provider (KYC_PROVIDER in .env)
- *   kyc.verifyBusiness(req)         → default provider, business (KYB) check
- *   kyc.use('qoreid').verifyNin(req) → a specific provider for this call
+ * KYC checks. Uses KYC_PROVIDER by default, or kyc.use('qoreid') for a specific provider.
  */
 @Injectable()
 export class KycService extends ProviderRegistry<KycProviderName, IKycProvider> {

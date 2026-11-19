@@ -78,9 +78,7 @@ export class OnboardingService {
   ) {}
 
   /**
-   * Step 1: phone number. Creates the user on first use, or resumes an unfinished sign-up
-   * (including a standard merchant OnCRE staff created), then sends an OTP.
-   * Institutions never sign up here: OnCRE staff create and verify them, and they only log in.
+   * Merchant signup. Sends an OTP to the phone number.
    */
   async signup(payload: MerchantSignupDto): Promise<ServiceResponse<ISignupResult>> {
     const { countryCode, phone } = parseMerchantPhone(payload.phone);
@@ -101,7 +99,9 @@ export class OnboardingService {
     };
   }
 
-  /** Step 2: OTP. Marks the phone verified and returns a short-lived onboarding token. */
+  /**
+   * Verify phone OTP and return the onboarding token.
+   */
   async verifyPhone(payload: VerifyMerchantPhoneDto): Promise<ServiceResponse<IVerifyPhoneResult>> {
     const { countryCode, phone } = parseMerchantPhone(payload.phone);
 
@@ -124,8 +124,7 @@ export class OnboardingService {
   }
 
   /**
-   * Step 3: NIN. Verifies it with QoreID, then creates the standard merchant with the name on the
-   * NIN record. Safe to retry: a NIN already verified for this user is not sent to QoreID again.
+   * Verify NIN and create the merchant.
    */
   async verifyNin(userDoc: User, payload: VerifyNinDto): Promise<ServiceResponse<any>> {
     const { progress, existingMerchant } = await this.findIdentityStep(userDoc);
@@ -160,8 +159,7 @@ export class OnboardingService {
   }
 
   /**
-   * Login step 1: phone number. Only merchants who finished sign-up can log in. The code uses the
-   * same limits as sign-up.
+   * Merchant login. Sends an OTP to the phone number.
    */
   async login(payload: MerchantLoginDto): Promise<ServiceResponse<IMerchantLoginCodeSent>> {
     const { user, progress } = await this.findLoginAccount(payload.phone);
@@ -171,9 +169,11 @@ export class OnboardingService {
     return { data: { expiresInSeconds }, message: 'OTP sent to your phone number.' };
   }
 
-  /** Login step 2: code. Returns the login token. */
+  /**
+   * Verify login OTP.
+   */
   async verifyLogin(payload: VerifyMerchantLoginDto): Promise<ServiceResponse<IMerchantLoginResult>> {
-    // Same generic error as a wrong code, so this step never reveals whether a number has an account.
+    // use the same error as a wrong code so we don't reveal if the number exists
     const { user, progress, merchant } = await this.findLoginAccount(payload.phone, INVALID_CODE);
 
     await this.otp.consume(user, progress, payload.otp);
@@ -194,7 +194,6 @@ export class OnboardingService {
    * PRIVATE METHODS
    */
 
-  /** The login rules: a merchant user who finished sign-up and is not blocked. */
   private async findLoginAccount(
     rawPhone: string,
     notFoundMessage = 'No merchant account uses this phone number. Please sign up.',
@@ -253,7 +252,7 @@ export class OnboardingService {
     countryCode: string,
     phone: string,
   ): Promise<MerchantOnboardingDocument> {
-    // A merchant OnCRE staff created already exists, so link it from the start.
+    // link the merchant if staff already created one
     const existingMerchant = await this.merchant.findOne({ userId: user._id });
 
     let progress: MerchantOnboardingDocument | null;
@@ -277,7 +276,6 @@ export class OnboardingService {
     return progress;
   }
 
-  /** Checks for step 3 (NIN): phone verified, sign-up not finished yet. */
   private async refuseInstitutionSignup(user: User): Promise<void> {
     const merchant = await this.merchant.findOne({ userId: user._id });
     if (merchant?.type !== MerchantType.FINANCIAL_INSTITUTION) return;
@@ -307,7 +305,6 @@ export class OnboardingService {
     return { progress, existingMerchant };
   }
 
-  /** Last step of sign-up: link the record, activate the user, finish sign-up, issue the login token. */
   private async completeOnboarding(
     user: User,
     progress: MerchantOnboardingDocument,

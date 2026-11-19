@@ -5,15 +5,11 @@ import { config } from '@on/config';
 
 import { IQoreIdNinVerificationPayload } from './type';
 
-/** Shows only the last four digits, so logs never hold a full ID number. */
 function maskIdNumber(idNumber: string): string {
   return `${'*'.repeat(Math.max(idNumber.length - 4, 0))}${idNumber.slice(-4)}`;
 }
 
-/**
- * QoreID's docs list the CAC check under three versions. They are tried in order; the next one is
- * used only when QoreID says the path does not exist (404), so a real answer is never re-requested.
- */
+// QoreID docs show v1, v2 and v3. Try the next one only on a 404.
 const CAC_PATHS = ['/v1/ng/identities/cac-premium', '/v2/ng/identities/cac-premium', '/v3/ng/identities/cac-premium'];
 
 @Injectable()
@@ -72,7 +68,7 @@ export class QoreIdService {
   }
 
   /**
-   * Look up a Nigerian business on the CAC register (RC, BN or IT number) using QoreID.
+   * Validate a Nigerian business (CAC) using QoreID.
    */
   async verifyCac(regNumber: string) {
     const accessToken = await this.getAccessToken();

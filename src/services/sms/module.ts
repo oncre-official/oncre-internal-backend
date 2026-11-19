@@ -6,7 +6,7 @@ import { TermiiSmsAdapter } from './adapters/termii';
 import { SmsService } from './service';
 import { SMS_ADAPTERS } from './type';
 
-/** To add a provider: write an adapter, add it to ADAPTERS, add its name to SmsProviderName. */
+// new provider: add the adapter here and its name to SmsProviderName
 const ADAPTERS = [TermiiSmsAdapter];
 
 @Module({

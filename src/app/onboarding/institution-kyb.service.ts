@@ -16,16 +16,14 @@ import { OnboardingStep } from './types/onboarding.interface';
 
 const DUPLICATE_KEY = 11000;
 
-/** A passed CAC check, waiting for the institution to be created. `skipped` when KYB_VERIFY_CAC=false. */
+// skipped is true when KYB_VERIFY_CAC=false
 export type IInstitutionKybCheck =
   | { skipped: false; regNumber: string; idNumberHash: string; business: IKycBusiness; result: IBusinessCheckResult }
   | { skipped: true };
 
 /**
- * KYB for institutions, run by OnCRE staff when they create the institution.
- *   1. check()    before anything is saved: CAC lookup (QoreID) must pass, or nothing is created.
- *   2. complete() after the institution exists: saves the KYB record and finishes sign-up,
- *                 so the institution only has to log in (phone + SMS code).
+ * KYB for financial institutions, done when staff create the merchant.
+ * check() runs before the merchant is saved, complete() after.
  */
 @Injectable()
 export class InstitutionKybService {
@@ -39,8 +37,7 @@ export class InstitutionKybService {
   ) {}
 
   /**
-   * Throws a clear error when the business fails: not on CAC, not ACTIVE, a different name from
-   * `legalName`, or already linked to another OnCRE account. With no `legalName`, the CAC name is used.
+   * Verify the registration number on CAC and compare the name with legalName.
    */
   async check(details: { registrationNo?: string; legalName?: string } | undefined): Promise<IInstitutionKybCheck> {
     if (!details?.registrationNo) {
@@ -56,7 +53,7 @@ export class InstitutionKybService {
     const regNumber = normalizeRegNumber(details.registrationNo);
     const idNumberHash = hashIdNumber(KycType.KYB, regNumber);
 
-    // Checked before calling QoreID, so a duplicate never costs a paid check.
+    // check for duplicates first so we don't pay for a QoreID call
     const usedElsewhere = await this.kyc.count({ type: KycType.KYB, idNumberHash, status: KycStatus.VERIFIED });
     if (usedElsewhere) {
       throw new ConflictException(`${details.registrationNo} is already linked to another OnCRE account.`);
@@ -81,8 +78,7 @@ export class InstitutionKybService {
   }
 
   /**
-   * Saves the KYB record, activates the user and marks sign-up finished.
-   * With the check skipped, no KYB record is saved, but sign-up still finishes so login can be tested.
+   * Save the KYB record, activate the user and mark onboarding as done.
    */
   async complete(user: User, merchant: Merchant, check: IInstitutionKybCheck): Promise<void> {
     if (!check.skipped) await this.saveKybRecord(user, merchant, check);

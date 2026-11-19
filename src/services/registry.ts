@@ -5,9 +5,7 @@ export interface INamedProvider<TName extends string = string> {
 }
 
 /**
- * Holds every adapter for one kind of service (SMS, KYC, bank...) and hands one out by name.
- * `use()` with no name returns the default chosen in config, so switching providers is a config
- * change; `use('name')` picks one for a single call.
+ * Provider switcher. use() returns the default from config, use('name') returns that provider.
  */
 export class ProviderRegistry<TName extends string, TProvider extends INamedProvider<TName>> {
   private readonly providers = new Map<TName, TProvider>();

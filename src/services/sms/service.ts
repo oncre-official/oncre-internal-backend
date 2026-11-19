@@ -7,9 +7,7 @@ import { ProviderRegistry } from '../registry';
 import { ISmsProvider, ISmsResult, SMS_ADAPTERS, SmsProviderName } from './type';
 
 /**
- * The only way the app sends SMS.
- *   sms.send(to, text)              → default provider (SMS_PROVIDER in .env)
- *   sms.use('termii').send(to, text) → a specific provider for this call
+ * Send SMS. Uses SMS_PROVIDER by default, or sms.use('termii') for a specific provider.
  */
 @Injectable()
 export class SmsService extends ProviderRegistry<SmsProviderName, ISmsProvider> {

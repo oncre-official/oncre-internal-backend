@@ -5,7 +5,7 @@ import { UserRepository } from '@on/app/user/repository/user.repository';
 
 import { ONBOARDING_TOKEN_SCOPE, onboardingTokenSecret } from '../helpers';
 
-/** Accepts only onboarding tokens issued after phone verification. Login tokens are rejected. */
+// only accepts the onboarding token
 @Injectable()
 export class OnboardingGuard implements CanActivate {
   constructor(

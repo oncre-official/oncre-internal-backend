@@ -82,7 +82,7 @@ export class MerchantService {
     const merchantExist = await this.merchant.findOne({ $or: [{ name }, { phone }] });
     if (merchantExist) throw new ConflictException('Merchant already exists');
 
-    // Institutions pass KYB (CAC check) before anything is saved; a failure creates nothing.
+    // institutions must pass KYB before we create anything
     const isInstitution = payload.type === MerchantType.FINANCIAL_INSTITUTION;
     const kybCheck = isInstitution ? await this.institutionKyb.check(payload.institutionDetails) : undefined;
     if (kybCheck && !kybCheck.skipped && payload.institutionDetails && !payload.institutionDetails.legalName) {
@@ -118,7 +118,6 @@ export class MerchantService {
 
     const merchant = await this.merchant.create(merchantPayload);
 
-    // Sign-up is finished for a verified institution: it only has to log in (phone + SMS code).
     if (kybCheck) await this.institutionKyb.complete(user, merchant, kybCheck);
 
     await this.log.record(creator, {

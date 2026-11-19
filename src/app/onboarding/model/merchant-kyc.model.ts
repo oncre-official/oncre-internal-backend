@@ -70,7 +70,6 @@ export class MerchantKyc extends Document implements IMerchantKyc {
   @Prop({ type: String, required: true })
   idNumberMasked: string;
 
-  /** Keyed hash of the ID number, used only to stop one NIN opening two merchants. Never exposed. */
   @Prop({ type: String, required: true, select: false })
   idNumberHash: string;
 

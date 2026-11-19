@@ -6,19 +6,22 @@ import { User } from '@on/app/user/model/user.model';
 import { ONBOARDING_TOKEN_SCOPE, ONBOARDING_TOKEN_TTL_SECONDS, onboardingTokenSecret } from './helpers';
 
 /**
- * Issues every token a merchant gets. Changing what a token holds, how long it lasts, or adding
- * refresh tokens happens here only.
+ * Merchant tokens.
  */
 @Injectable()
 export class MerchantSessionService {
   constructor(private readonly jwt: JwtService) {}
 
-  /** Normal login token, accepted by JwtAuthGuard. Holds only the user id. */
+  /**
+   * Login token.
+   */
   async issueLoginToken(user: User): Promise<string> {
     return await this.jwt.signAsync({ _id: String(user._id) });
   }
 
-  /** Short-lived token for the sign-up steps after the phone is verified. Rejected by JwtAuthGuard. */
+  /**
+   * Onboarding token, used for the NIN step. Not valid for JwtAuthGuard.
+   */
   async issueOnboardingToken(user: User): Promise<string> {
     return await this.jwt.signAsync(
       { _id: String(user._id), scope: ONBOARDING_TOKEN_SCOPE },

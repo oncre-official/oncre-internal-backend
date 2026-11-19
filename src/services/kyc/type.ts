@@ -17,7 +17,6 @@ export interface INinCheckRequest {
   lastName: string;
 }
 
-/** The parts of a provider's NIN answer the app relies on, the same for every provider. */
 export interface INinCheckResult {
   provider: KycProviderName;
   verified: boolean;
@@ -26,18 +25,15 @@ export interface INinCheckResult {
   failureReason?: string;
 }
 
-/** Official details of a business, from its CAC record. */
 export interface IKycBusiness {
   legalName: string;
   registrationNumber: string;
 }
 
 export interface IBusinessCheckRequest {
-  /** RC, BN or IT number, already cleaned (upper case, no spaces). */
   regNumber: string;
 }
 
-/** The parts of a provider's business (KYB) answer the app relies on, the same for every provider. */
 export interface IBusinessCheckResult {
   provider: KycProviderName;
   verified: boolean;
@@ -46,7 +42,6 @@ export interface IBusinessCheckResult {
   failureReason?: string;
 }
 
-/** What every KYC adapter must do. */
 export interface IKycProvider extends INamedProvider<KycProviderName> {
   verifyNin(request: INinCheckRequest): Promise<INinCheckResult>;
   verifyBusiness(request: IBusinessCheckRequest): Promise<IBusinessCheckResult>;

@@ -6,7 +6,7 @@ import { QoreIdKycAdapter } from './adapters/qoreid';
 import { KycService } from './service';
 import { KYC_ADAPTERS } from './type';
 
-/** To add a provider: write an adapter, add it to ADAPTERS, add its name to KycProviderName. */
+// new provider: add the adapter here and its name to KycProviderName
 const ADAPTERS = [QoreIdKycAdapter];
 
 @Module({

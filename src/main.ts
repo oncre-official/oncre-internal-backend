@@ -23,7 +23,6 @@ async function bootstrap() {
 
   app.set('trust proxy', true);
 
-  // Every route starts with /api/v1, including the home route (GET /api/v1).
   app.setGlobalPrefix('api/v1');
 
   app.useGlobalPipes(new ValidationPipe({}));
