@@ -27,7 +27,7 @@ import type { Response, Request } from 'express';
   description: 'Error occurred',
   type: ApiResponseDTO,
 })
-@Controller('api/v1/shared')
+@Controller('shared')
 export class SharedController {
   constructor(private readonly sharedService: SharedService) {}
 

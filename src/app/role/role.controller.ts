@@ -17,7 +17,7 @@ import type { Response, Request } from 'express';
   description: 'Error occurred',
   type: ApiResponseDTO,
 })
-@Controller('api/v1/roles')
+@Controller('roles')
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 

@@ -5,6 +5,13 @@ import { config } from '@on/config';
 
 import { IQoreIdNinVerificationPayload } from './type';
 
+function maskIdNumber(idNumber: string): string {
+  return `${'*'.repeat(Math.max(idNumber.length - 4, 0))}${idNumber.slice(-4)}`;
+}
+
+// QoreID docs show v1, v2 and v3. Try the next one only on a 404.
+const CAC_PATHS = ['/v1/ng/identities/cac-premium', '/v2/ng/identities/cac-premium', '/v3/ng/identities/cac-premium'];
+
 @Injectable()
 export class QoreIdService {
   private readonly logger = new Logger(QoreIdService.name);
@@ -52,12 +59,53 @@ export class QoreIdService {
       const message = error?.response?.data?.message ?? 'Unable to verify NIN at this time';
 
       this.logger.error(
-        `QoreID NIN verification failed for NIN: ${idNumber}`,
+        `QoreID NIN verification failed for NIN: ${maskIdNumber(idNumber)}`,
         error instanceof Error ? error.stack : String(error),
       );
 
       throw new BadGatewayException(message);
     }
+  }
+
+  /**
+   * Validate a Nigerian business (CAC) using QoreID.
+   */
+  async verifyCac(regNumber: string) {
+    const accessToken = await this.getAccessToken();
+
+    for (const [index, path] of CAC_PATHS.entries()) {
+      try {
+        const response = await this.axios.post(
+          path,
+          { regNumber },
+          {
+            headers: {
+              accept: 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+
+        if (index > 0) this.logger.warn(`QoreID CAC answered on ${path}; move it first in CAC_PATHS`);
+
+        return response.data;
+      } catch (error: any) {
+        const isLastPath = index === CAC_PATHS.length - 1;
+        if (error?.response?.status === 404 && !isLastPath) continue;
+
+        const message = error?.response?.data?.message ?? 'Unable to verify business at this time';
+
+        this.logger.error(
+          `QoreID CAC verification failed on ${path} for: ${maskIdNumber(regNumber)}`,
+          error instanceof Error ? error.stack : String(error),
+        );
+
+        throw new BadGatewayException(message);
+      }
+    }
+
+    throw new BadGatewayException('Unable to verify business at this time');
   }
 
   /**

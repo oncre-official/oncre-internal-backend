@@ -29,7 +29,7 @@ import type { Response, Request } from 'express';
 
 @ApiTags('Case')
 @ApiUnprocessableEntityResponse({ description: 'Error occurred', type: ApiResponseDTO })
-@Controller('api/v1/cases')
+@Controller('cases')
 export class CaseController {
   constructor(private readonly caseService: CaseService) {}
 

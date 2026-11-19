@@ -1,7 +1,8 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { LogModule } from '../log/log.module';
+import { OnboardingModule } from '../onboarding/onboarding.module';
 import { RoleModule } from '../role/role.module';
 import { SharedModule } from '../shared/shared.module';
 import { UserModule } from '../user/user.module';
@@ -18,6 +19,7 @@ import { MerchantRepository } from './repository/merchant.repository';
     RoleModule,
     SharedModule,
     LogModule,
+    forwardRef(() => OnboardingModule),
   ],
   controllers: [MerchantController],
   providers: [MerchantRepository, MerchantService, MerchantRepository],

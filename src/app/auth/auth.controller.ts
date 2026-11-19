@@ -12,7 +12,7 @@ import type { Response, Request } from 'express';
 
 @ApiTags('Auth')
 @ApiUnprocessableEntityResponse({ description: 'Error occurred', type: ApiResponseDTO })
-@Controller('api/v1/auth')
+@Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

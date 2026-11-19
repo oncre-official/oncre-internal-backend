@@ -65,4 +65,13 @@ export const config = {
     clientId: process.env.QOREID_CLIENT_ID,
     secretKey: process.env.QOREID_SECRET_KEY,
   },
+  kyc: {
+    hashSecret: process.env.KYC_HASH_SECRET,
+    // KYB_VERIFY_CAC=false skips the CAC check (not allowed in production)
+    verifyCac: isProd || process.env.KYB_VERIFY_CAC !== 'false',
+  },
+  providers: {
+    sms: process.env.SMS_PROVIDER || 'termii',
+    kyc: process.env.KYC_PROVIDER || 'qoreid',
+  },
 };

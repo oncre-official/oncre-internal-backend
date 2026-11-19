@@ -23,6 +23,8 @@ async function bootstrap() {
 
   app.set('trust proxy', true);
 
+  app.setGlobalPrefix('api/v1');
+
   app.useGlobalPipes(new ValidationPipe({}));
 
   const swaggerConfig = new DocumentBuilder()
