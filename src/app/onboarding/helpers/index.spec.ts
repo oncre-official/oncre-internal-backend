@@ -1,4 +1,12 @@
-import { generateOtp, hashIdNumber, hashOtp, maskIdNumber, safeEqual } from './index';
+import {
+  generateOtp,
+  hashIdNumber,
+  hashOtp,
+  maskIdNumber,
+  normalizeRegNumber,
+  safeEqual,
+  sameBusinessName,
+} from './index';
 
 jest.mock('@on/config', () => ({ config: { kyc: { hashSecret: 'test-secret' } } }));
 
@@ -25,5 +33,20 @@ describe('onboarding helpers', () => {
     expect(safeEqual('abc', 'abc')).toBe(true);
     expect(safeEqual('abc', 'abd')).toBe(false);
     expect(safeEqual('abc', 'abcd')).toBe(false);
+  });
+});
+
+describe('CAC helpers', () => {
+  it('stores RC numbers in one form', () => {
+    expect(normalizeRegNumber('RC123456')).toBe('123456');
+    expect(normalizeRegNumber(' rc 123-456 ')).toBe('123456');
+    expect(normalizeRegNumber('123456')).toBe('123456');
+    expect(normalizeRegNumber('bn 998877')).toBe('BN998877');
+  });
+
+  it('matches company names, ignoring case, punctuation and LTD / LIMITED / PLC', () => {
+    expect(sameBusinessName('Acme Financial Services Limited', 'ACME FINANCIAL SERVICES LTD.')).toBe(true);
+    expect(sameBusinessName('Acme Financial Services Ltd', 'acme  financial services')).toBe(true);
+    expect(sameBusinessName('Acme Financial Services Ltd', 'Acme Finance Ltd')).toBe(false);
   });
 });

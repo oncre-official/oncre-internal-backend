@@ -33,7 +33,9 @@ export interface IMerchantOnboarding extends IBaseType {
   otpLockedUntil?: Date;
   ninFailedAttempts: number;
   ninLockedUntil?: Date;
-  /** Set as soon as the user's merchant exists: at sign-up for staff-created merchants, at NIN for self sign-up. */
+  kybFailedAttempts: number;
+  kybLockedUntil?: Date;
+  /** Set as soon as the user's merchant exists: at sign-up for staff-created merchants, at NIN or KYB for self sign-up. */
   merchantId?: ObjectId;
   /** When the user reached IDENTITY_VERIFIED. */
   completedAt?: Date;

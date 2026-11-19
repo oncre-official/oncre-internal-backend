@@ -46,6 +46,12 @@ export class MerchantOnboarding extends Document implements IMerchantOnboarding 
   @Prop({ type: Date })
   ninLockedUntil?: Date;
 
+  @Prop({ type: Number, default: 0 })
+  kybFailedAttempts: number;
+
+  @Prop({ type: Date })
+  kybLockedUntil?: Date;
+
   @ApiPropertyOptional()
   @Prop({ type: Types.ObjectId, ref: 'Merchant' })
   merchantId?: ObjectId;

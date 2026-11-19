@@ -22,6 +22,7 @@ import {
   MerchantLoginDto,
   MerchantSignupDto,
   VerifyMerchantLoginDto,
+  VerifyKybDto,
   VerifyMerchantPhoneDto,
   VerifyNinDto,
 } from './dto/onboarding.dto';
@@ -29,10 +30,14 @@ import {
   assertNotLocked,
   hashIdNumber,
   INVALID_CODE,
+  KYB_LOCK_HOURS,
+  KYB_MAX_FAILED_ATTEMPTS,
   maskIdNumber,
   NIN_LOCK_HOURS,
   NIN_MAX_FAILED_ATTEMPTS,
+  normalizeRegNumber,
   parseMerchantPhone,
+  sameBusinessName,
 } from './helpers';
 import { MerchantKycDocument } from './model/merchant-kyc.model';
 import { MerchantOnboardingDocument } from './model/merchant-onboarding.model';
@@ -127,16 +132,7 @@ export class OnboardingService {
    * NIN record. Safe to retry: a NIN already verified for this user is not sent to QoreID again.
    */
   async verifyNin(userDoc: User, payload: VerifyNinDto): Promise<ServiceResponse<any>> {
-    const progress = await this.onboarding.findOne({ userId: userDoc._id });
-    if (!progress || progress.step === OnboardingStep.PHONE_PENDING) {
-      throw new ForbiddenException('Verify your phone number first.');
-    }
-
-    if (progress.step === OnboardingStep.IDENTITY_VERIFIED) {
-      throw new ConflictException('Your identity has already been verified.');
-    }
-
-    const existingMerchant = await this.merchant.findOne({ userId: userDoc._id });
+    const { progress, existingMerchant } = await this.findIdentityStep(userDoc);
     if (existingMerchant?.type === MerchantType.FINANCIAL_INSTITUTION) {
       throw new BadRequestException('Financial institutions are verified with KYB, not NIN.');
     }
@@ -159,31 +155,52 @@ export class OnboardingService {
 
     const merchant = existingMerchant ?? (await this.createStandardMerchant(userDoc, record.verifiedName.fullName));
 
-    await this.kyc.updateOne({ _id: record._id }, { $set: { merchantId: merchant._id } });
-    await this.user.updateById(userDoc._id, { status: UserStatus.ACTIVE });
-    await this.onboarding.updateOne(
-      { _id: progress._id },
-      {
-        $set: {
-          step: OnboardingStep.IDENTITY_VERIFIED,
-          merchantId: merchant._id,
-          ninFailedAttempts: 0,
-          completedAt: new Date(),
-        },
-        $unset: { ninLockedUntil: 1 },
-      },
-    );
-
-    const token = await this.session.issueLoginToken(userDoc);
-
-    const data = {
-      nextStep: OnboardingNextStep.WALLET,
-      token,
-      merchant: { _id: merchant._id, merchantId: merchant.merchantId, name: merchant.name, type: merchant.type },
-      kyc: { type: record.type, idNumberMasked: record.idNumberMasked, verifiedName: record.verifiedName },
-    };
+    const data = await this.completeOnboarding(userDoc, progress, merchant, record, {
+      $set: { ninFailedAttempts: 0 },
+      $unset: { ninLockedUntil: 1 },
+    });
 
     return { data, message: 'NIN verified. Your merchant account is ready.' };
+  }
+
+  /**
+   * Step 3 for institutions: KYB. Only for institutions OnCRE staff created. The CAC number must be
+   * the one staff saved, and QoreID must find the business ACTIVE with the same legal name.
+   * Safe to retry: a business already verified for this user is not sent to QoreID again.
+   */
+  async verifyKyb(userDoc: User, payload: VerifyKybDto): Promise<ServiceResponse<any>> {
+    const { progress, existingMerchant: merchant } = await this.findIdentityStep(userDoc);
+    if (merchant?.type !== MerchantType.FINANCIAL_INSTITUTION) {
+      throw new BadRequestException('Business verification is only for institutions set up by OnCRE.');
+    }
+
+    assertNotLocked(progress.kybLockedUntil, 'Too many failed business verification attempts.');
+
+    const regNumber = normalizeRegNumber(payload.regNumber);
+    const savedRegNumber = merchant.institutionDetails?.registrationNo;
+    if (savedRegNumber && normalizeRegNumber(savedRegNumber) !== regNumber) {
+      throw new BadRequestException('This registration number does not match the one on your OnCRE account.');
+    }
+
+    const idNumberHash = hashIdNumber(KycType.KYB, regNumber);
+
+    const usedElsewhere = await this.kyc.count({
+      type: KycType.KYB,
+      idNumberHash,
+      status: KycStatus.VERIFIED,
+      userId: { $ne: userDoc._id },
+    });
+    if (usedElsewhere) throw new ConflictException('This business is already linked to another OnCRE account.');
+
+    let record = await this.kyc.findOne({ userId: userDoc._id, type: KycType.KYB, status: KycStatus.VERIFIED });
+    if (!record) record = await this.checkBusinessWithProvider(userDoc, progress, merchant, regNumber, idNumberHash);
+
+    const data = await this.completeOnboarding(userDoc, progress, merchant, record, {
+      $set: { kybFailedAttempts: 0 },
+      $unset: { kybLockedUntil: 1 },
+    });
+
+    return { data, message: 'Business verified. Your merchant account is ready.' };
   }
 
   /**
@@ -310,6 +327,62 @@ export class OnboardingService {
     return merchant?.type === MerchantType.FINANCIAL_INSTITUTION ? OnboardingNextStep.KYB : OnboardingNextStep.NIN;
   }
 
+  /** Shared checks for step 3 (NIN or KYB): phone verified, sign-up not finished yet. */
+  private async findIdentityStep(
+    user: User,
+  ): Promise<{ progress: MerchantOnboardingDocument; existingMerchant: Merchant | null }> {
+    const progress = await this.onboarding.findOne({ userId: user._id });
+    if (!progress || progress.step === OnboardingStep.PHONE_PENDING) {
+      throw new ForbiddenException('Verify your phone number first.');
+    }
+
+    if (progress.step === OnboardingStep.IDENTITY_VERIFIED) {
+      throw new ConflictException('Your identity has already been verified.');
+    }
+
+    const existingMerchant = await this.merchant.findOne({ userId: user._id });
+
+    return { progress, existingMerchant };
+  }
+
+  /** Last step for NIN and KYB: link the record, activate the user, finish sign-up, issue the login token. */
+  private async completeOnboarding(
+    user: User,
+    progress: MerchantOnboardingDocument,
+    merchant: Merchant,
+    record: MerchantKycDocument,
+    resetCounters: { $set: Record<string, number>; $unset: Record<string, 1> },
+  ) {
+    await this.kyc.updateOne({ _id: record._id }, { $set: { merchantId: merchant._id } });
+    await this.user.updateById(user._id, { status: UserStatus.ACTIVE });
+    await this.onboarding.updateOne(
+      { _id: progress._id },
+      {
+        $set: {
+          step: OnboardingStep.IDENTITY_VERIFIED,
+          merchantId: merchant._id,
+          completedAt: new Date(),
+          ...resetCounters.$set,
+        },
+        $unset: resetCounters.$unset,
+      },
+    );
+
+    const token = await this.session.issueLoginToken(user);
+
+    return {
+      nextStep: OnboardingNextStep.WALLET,
+      token,
+      merchant: { _id: merchant._id, merchantId: merchant.merchantId, name: merchant.name, type: merchant.type },
+      kyc: {
+        type: record.type,
+        idNumberMasked: record.idNumberMasked,
+        ...(record.verifiedName ? { verifiedName: record.verifiedName } : {}),
+        ...(record.verifiedBusiness ? { verifiedBusiness: record.verifiedBusiness } : {}),
+      },
+    };
+  }
+
   private async checkNinWithProvider(
     user: User,
     progress: MerchantOnboardingDocument,
@@ -359,6 +432,65 @@ export class OnboardingService {
     } catch (error: any) {
       if (error?.code === DUPLICATE_KEY) {
         throw new ConflictException('This NIN is already linked to another OnCRE account.');
+      }
+      throw error;
+    }
+  }
+
+  private async checkBusinessWithProvider(
+    user: User,
+    progress: MerchantOnboardingDocument,
+    merchant: Merchant,
+    regNumber: string,
+    idNumberHash: string,
+  ): Promise<MerchantKycDocument> {
+    const result = await this.kycProvider.verifyBusiness({ regNumber });
+
+    // QoreID found the business, but it must be the same company staff set up.
+    const savedName = merchant.institutionDetails?.legalName;
+    if (result.verified && result.business && savedName && !sameBusinessName(result.business.legalName, savedName)) {
+      result.verified = false;
+      result.failureReason = `CAC name "${result.business.legalName}" does not match "${savedName}"`;
+    }
+
+    const base = {
+      userId: user._id,
+      merchantId: merchant._id,
+      type: KycType.KYB,
+      provider: result.provider,
+      idNumberMasked: maskIdNumber(regNumber),
+      idNumberHash,
+      providerReference: result.providerReference,
+    };
+
+    if (!result.verified) {
+      await this.kyc.create({ ...base, status: KycStatus.FAILED, failureReason: result.failureReason });
+
+      const attempts = progress.kybFailedAttempts + 1;
+      const locked = attempts >= KYB_MAX_FAILED_ATTEMPTS;
+      await this.onboarding.updateOne(
+        { _id: progress._id },
+        {
+          $set: locked
+            ? { kybFailedAttempts: 0, kybLockedUntil: new Date(Date.now() + KYB_LOCK_HOURS * 60 * 60 * 1000) }
+            : { kybFailedAttempts: attempts },
+        },
+      );
+
+      this.logger.warn(`KYB check failed for user ${String(user._id)}: ${result.failureReason}`);
+      throw new BadRequestException('We could not verify your business. Please check the registration number.');
+    }
+
+    try {
+      return await this.kyc.create({
+        ...base,
+        status: KycStatus.VERIFIED,
+        verifiedBusiness: result.business,
+        verifiedAt: new Date(),
+      });
+    } catch (error: any) {
+      if (error?.code === DUPLICATE_KEY) {
+        throw new ConflictException('This business is already linked to another OnCRE account.');
       }
       throw error;
     }

@@ -12,6 +12,8 @@ export const OTP_MAX_FAILED_ATTEMPTS = 5;
 export const OTP_LOCK_MINUTES = 30;
 export const NIN_MAX_FAILED_ATTEMPTS = 3;
 export const NIN_LOCK_HOURS = 24;
+export const KYB_MAX_FAILED_ATTEMPTS = 3;
+export const KYB_LOCK_HOURS = 24;
 export const ONBOARDING_TOKEN_TTL_SECONDS = 30 * 60;
 export const ONBOARDING_TOKEN_SCOPE = 'merchant_onboarding';
 export const INVALID_CODE = 'Invalid or expired code.';
@@ -22,6 +24,29 @@ export function parseMerchantPhone(value: string): { countryCode: string; phone:
   if (!/^\d{7,12}$/.test(phone)) throw new BadRequestException('Invalid phone number.');
 
   return { countryCode: code, phone };
+}
+
+/** One stored form for a CAC number: upper case, no spaces or dashes, no RC prefix (BN and IT keep theirs). */
+export function normalizeRegNumber(value: string): string {
+  const cleaned = value.toUpperCase().replace(/[\s-]/g, '');
+
+  return cleaned.startsWith('RC') ? cleaned.slice(2) : cleaned;
+}
+
+/**
+ * True when two company names are the same after ignoring case, punctuation, extra spaces and the
+ * company suffix (LTD / LIMITED / PLC).
+ */
+export function sameBusinessName(a: string, b: string): boolean {
+  const clean = (name: string) =>
+    name
+      .toUpperCase()
+      .replace(/[^A-Z0-9 ]/g, ' ')
+      .split(/\s+/)
+      .filter((word) => word && !['LTD', 'LIMITED', 'PLC'].includes(word))
+      .join(' ');
+
+  return clean(a) === clean(b);
 }
 
 /** Throws 429 while a lock is active, saying how many minutes are left. */

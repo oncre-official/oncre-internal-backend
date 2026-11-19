@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 
-import { IKycPersonName, KycProviderName } from '@on/services/kyc/type';
+import { IKycBusiness, IKycPersonName, KycProviderName } from '@on/services/kyc/type';
 import { IBaseType } from '@on/utils/types';
 
 export enum KycType {
@@ -21,10 +21,7 @@ export enum KycStatus {
 export type IKycVerifiedName = IKycPersonName;
 
 /** Official details of a business, from its registration record. Used for institutions (KYB). */
-export interface IKycVerifiedBusiness {
-  legalName: string;
-  registrationNumber: string;
-}
+export type IKycVerifiedBusiness = IKycBusiness;
 
 export interface IMerchantKyc extends IBaseType {
   userId: ObjectId;

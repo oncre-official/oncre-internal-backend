@@ -26,9 +26,30 @@ export interface INinCheckResult {
   failureReason?: string;
 }
 
-/** What every KYC adapter must do. Add verifyBusiness (KYB) here when it is built. */
+/** Official details of a business, from its CAC record. */
+export interface IKycBusiness {
+  legalName: string;
+  registrationNumber: string;
+}
+
+export interface IBusinessCheckRequest {
+  /** RC, BN or IT number, already cleaned (upper case, no spaces). */
+  regNumber: string;
+}
+
+/** The parts of a provider's business (KYB) answer the app relies on, the same for every provider. */
+export interface IBusinessCheckResult {
+  provider: KycProviderName;
+  verified: boolean;
+  business?: IKycBusiness;
+  providerReference?: string;
+  failureReason?: string;
+}
+
+/** What every KYC adapter must do. */
 export interface IKycProvider extends INamedProvider<KycProviderName> {
   verifyNin(request: INinCheckRequest): Promise<INinCheckResult>;
+  verifyBusiness(request: IBusinessCheckRequest): Promise<IBusinessCheckResult>;
 }
 
 export const KYC_ADAPTERS = Symbol('KYC_ADAPTERS');
